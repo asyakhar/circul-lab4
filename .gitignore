@@ -1,0 +1,16 @@
+**/target/
+booking-service/build/
+booking-service/.gradle/
+.idea/
+.m2/
+.run/
+wildfly/
+tools/*.jar
+tools/observability/
+.DS_Store
+client/.venv/
+client/__pycache__/
+client/*.log
+client/*.pid
+client/tls/*.crt
+client/tls/*.key

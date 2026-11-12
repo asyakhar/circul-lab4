@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЦИРКуль — билетная касса</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=mfe-1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}?v=mfe-1">
+</head>
+<body>
+<header class="site-header">
+    <div class="marquee-lights" aria-hidden="true"></div>
+    <div class="tent-wheel" aria-hidden="true"><div class="tent-wheel-center"></div></div>
+    <div class="hero-copy">
+        <p class="eyebrow">Билетная касса • представление начинается</p>
+        <h1>ЦИРКуль</h1>
+        <p class="hero-slogan">Очерти круг своих проблем и бронируй тут билет!</p>
+        <div class="mascot-stage" aria-label="Круглик, зайчик-билетёр">
+            <img class="mascot-portrait" src="{{ url_for('static', filename='assets/kruglik-bunny.png') }}"
+                 alt="Зайчик в шляпе фокусника" width="160" height="160">
+            <div id="message" class="message mascot-speech" role="status" aria-live="polite">
+                Привет! Помогу найти представление и оформить билет.
+            </div>
+        </div>
+    </div>
+    <button id="reloadButton" class="primary hero-refresh" type="button">
+        Обновить афишу <span aria-hidden="true">↻</span>
+    </button>
+</header>
+
+<button class="balloon-trigger balloon-trigger-left" type="button" aria-label="Нажать на воздушные шары слева">
+    <img src="{{ url_for('static', filename='assets/circus-balloons.png') }}" alt="Цирковые воздушные шары" draggable="false">
+</button>
+<button class="balloon-trigger balloon-trigger-right" type="button" aria-label="Нажать на воздушные шары справа">
+    <img src="{{ url_for('static', filename='assets/circus-balloons.png') }}" alt="Цирковые воздушные шары" draggable="false">
+</button>
+<button class="balloon-trigger balloon-trigger-top-right" type="button" aria-label="Нажать на воздушные шары справа вверху">
+    <img src="{{ url_for('static', filename='assets/circus-balloons.png') }}" alt="Цирковые воздушные шары" draggable="false">
+</button>
+
+<main>
+    <ticket-mfe api-base="/api/ticket"></ticket-mfe>
+    <booking-mfe api-base="/api/booking" ticket-api-base="/api/ticket"></booking-mfe>
+</main>
+
+<footer class="circus-contacts">
+    <div class="contacts-intro">
+        <p class="contacts-kicker"><span class="contacts-brand">ЦИРКуль</span> ждёт гостей</p>
+        <h2>До встречи под куполом</h2>
+    </div>
+    <address class="contact-item"><span class="contact-label">Адрес</span><strong>Кронверкский проспект, 49</strong></address>
+    <div class="contact-item"><span class="contact-label">Хозяйки цирка</span><strong>Даша и Настя</strong></div>
+</footer>
+
+<div id="clownScare" class="clown-scare" role="presentation" aria-hidden="true">
+    <img class="scare-clown scare-clown-left" src="{{ url_for('static', filename='assets/scary-clown.png') }}" alt="Страшный цирковой клоун">
+    <img class="scare-clown scare-clown-right" src="{{ url_for('static', filename='assets/scary-clown.png') }}" alt="Страшный цирковой клоун">
+</div>
+
+<script type="module" src="{{ url_for('static', filename='mfe/shell/shell.js') }}?v=mfe-1"></script>
+<script type="module" src="{{ url_for('static', filename='mfe/ticket/ticket-mfe.js') }}?v=mfe-1"></script>
+<script type="module" src="{{ url_for('static', filename='mfe/booking/booking-mfe.js') }}?v=mfe-1"></script>
+</body>
+</html>

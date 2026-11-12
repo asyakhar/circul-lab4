@@ -1,0 +1,25 @@
+server:
+  port: ${BOOKING_SERVICE_PORT:8082}
+  servlet:
+    context-path: /booking
+
+spring:
+  application:
+    name: booking-service
+  jersey:
+    servlet:
+      load-on-startup: 1
+
+ticket:
+  service:
+    url: ${TICKET_SERVICE_URL:http://localhost:8080/api/v1}
+
+booking:
+  store:
+    path: ${BOOKING_STORE_PATH:.run/booking.db}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

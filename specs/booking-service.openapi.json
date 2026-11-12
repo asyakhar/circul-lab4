@@ -1,0 +1,303 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Booking Service API",
+    "description": "Спецификация сервиса управления билетами и сервиса бронирования.\nВсе параметры операций передаются в URL. В POST, PUT и PATCH данные Ticket\nпередаются в query-параметре `ticket` как JSON.\nПоля id, creationDate и event.id генерируются сервером.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Nostya && Dasha"
+    }
+  },
+  "servers": [
+    {
+      "url": "/booking",
+      "description": "Booking service"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Booking",
+      "description": "Продажа билетов и отмена бронирований"
+    }
+  ],
+  "paths": {
+    "/sell/{ticket-id}/{person-id}/{price}": {
+      "post": {
+        "tags": [
+          "Booking"
+        ],
+        "summary": "Продать билет",
+        "description": "Продаёт указанный билет указанному человеку за переданную сумму.\n        Для выполнения операции используется API первого сервиса.\n",
+        "operationId": "sellTicket",
+        "parameters": [
+          {
+            "name": "ticket-id",
+            "in": "path",
+            "required": true,
+            "description": "Идентификатор продаваемого билета",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 10
+          },
+          {
+            "name": "person-id",
+            "in": "path",
+            "required": true,
+            "description": "Идентификатор человека, которому продаётся билет",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 42
+          },
+          {
+            "name": "price",
+            "in": "path",
+            "required": true,
+            "description": "Сумма продажи билета",
+            "schema": {
+              "type": "number",
+              "format": "double",
+              "minimum": 0,
+              "exclusiveMinimum": true
+            },
+            "example": 2500.5
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Билет успешно продан"
+          },
+          "400": {
+            "description": "Сервер не смог разобрать запрос: ticket-id или person-id невозможно преобразовать в int64 либо price невозможно преобразовать в число double.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "21.09.2026 14:30:00",
+                  "status": 400,
+                  "error": "Bad Request",
+                  "message": "Параметр price невозможно преобразовать в double; получено abc.",
+                  "path": "/booking/sell/10/42/abc",
+                  "violations": [
+                    {
+                      "field": "price",
+                      "message": "Параметр price невозможно преобразовать в double; получено abc."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "В коллекции билетов отсутствует билет с указанным идентификатором.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "21.09.2026 14:30:00",
+                  "status": 404,
+                  "error": "Not Found",
+                  "message": "Билет с id 10 не найден.",
+                  "path": "/booking/sell/10/42/100"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Для ticket-id уже существует связь с владельцем, включая того же person-id. Повторная продажа не выполняется.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "21.09.2026 14:30:00",
+                  "status": 409,
+                  "error": "Conflict",
+                  "message": "Билет с id 10 уже продан.",
+                  "path": "/booking/sell/10/42/100"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ticket-id и person-id должны быть целыми int64 больше 0, price — числом больше 0.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "21.09.2026 14:30:00",
+                  "status": 422,
+                  "error": "Unprocessable Content",
+                  "message": "price должен быть больше 0; получено 0.",
+                  "path": "/booking/sell/10/42/0",
+                  "violations": [
+                    {
+                      "field": "price",
+                      "message": "price должен быть больше 0; получено 0."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/person/{person-id}/cancel": {
+      "delete": {
+        "tags": [
+          "Booking"
+        ],
+        "summary": "Отменить все бронирования человека",
+        "description": "Отменяет все бронирования указанного человека, удаляя его\nидентификатор из всех связанных билетов через API первого сервиса.\n",
+        "operationId": "cancelPersonBookings",
+        "parameters": [
+          {
+            "name": "person-id",
+            "in": "path",
+            "required": true,
+            "description": "Идентификатор человека",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Все бронирования человека успешно отменены"
+          },
+          "400": {
+            "description": "Сервер не смог разобрать запрос: path-параметр person-id невозможно преобразовать в int64, например, передано буквенное или дробное значение либо число за пределами int64.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "21.09.2026 14:30:00",
+                  "status": 400,
+                  "error": "Bad Request",
+                  "message": "Параметр person-id невозможно преобразовать в int64; получено abc.",
+                  "path": "/booking/person/abc/cancel",
+                  "violations": [
+                    {
+                      "field": "person-id",
+                      "message": "Параметр person-id невозможно преобразовать в int64; получено abc."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Параметр person-id должен быть целым числом int64 больше 0.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "timestamp": "21.09.2026 14:30:00",
+                  "status": 422,
+                  "error": "Unprocessable Content",
+                  "message": "person-id должен быть целым числом больше 0; получено -1.",
+                  "path": "/booking/person/-1/cancel",
+                  "violations": [
+                    {
+                      "field": "person-id",
+                      "message": "person-id должен быть целым числом больше 0; получено -1."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Информация об ошибке выполнения запроса",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "Время ошибки в UTC в формате dd.MM.yyyy HH:mm:ss, необязательные доли секунды.",
+            "pattern": "^(0[1-9]|[12][0-9]|3[01])\\.(0[1-9]|1[0-2])\\.\\d{4} ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,9})?$",
+            "example": "21.09.2026 14:30:00"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "HTTP-код ошибки",
+            "minimum": 400,
+            "maximum": 599,
+            "example": 422
+          },
+          "error": {
+            "type": "string",
+            "description": "Краткое название ошибки",
+            "example": "Unprocessable Content"
+          },
+          "message": {
+            "type": "string",
+            "description": "Подробное описание причины ошибки",
+            "example": "price должен быть больше 0; получено -10."
+          },
+          "path": {
+            "type": "string",
+            "description": "URL запроса, при обработке которого произошла ошибка",
+            "example": "/api/v1/tickets"
+          },
+          "violations": {
+            "type": "array",
+            "description": "Список нарушений схемы с именами полей. Для ошибок разбора может указываться весь параметр ticket.",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "message"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Путь поля или имя параметра.",
+                  "example": "ticket.price"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Условие, которое нарушено, и переданное значение.",
+                  "example": "price должен быть больше 0; получено -10."
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "timestamp",
+          "status",
+          "message",
+          "error",
+          "path"
+        ],
+        "title": "Ошибка API"
+      }
+    }
+  }
+}
