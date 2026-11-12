@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope
+        xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+        xmlns:t="http://soa.ifmo.ru/ticket/ws">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <t:createTicketRequest>
+            <t:ticket>
+                <t:name>Билет в партер</t:name>
+                <t:coordinates>
+                    <t:x>10.5</t:x>
+                    <t:y>20</t:y>
+                </t:coordinates>
+                <t:price>2500.5</t:price>
+                <t:comment>Место рядом со сценой</t:comment>
+                <t:type>VIP</t:type>
+                <t:event>
+                    <t:name>Вечер оперы</t:name>
+                    <t:ticketsCount>120</t:ticketsCount>
+                    <t:eventType>OPERA</t:eventType>
+                </t:event>
+            </t:ticket>
+        </t:createTicketRequest>
+    </soapenv:Body>
+</soapenv:Envelope>
