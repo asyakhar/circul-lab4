@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -7,13 +9,24 @@
         http://www.mulesoft.org/schema/mule/core
         http://www.mulesoft.org/schema/mule/core/current/mule.xsd
         http://www.mulesoft.org/schema/mule/http
-        http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+        http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/wsc
+        http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+        http://www.mulesoft.org/schema/mule/ee/core
+        http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 
     <configuration-properties file="application.properties"/>
 
     <http:listener-config name="rest-listener-config">
         <http:listener-connection host="${http.host}" port="${http.port}"/>
     </http:listener-config>
+
+    <wsc:config name="ticket-soap-config">
+        <wsc:connection wsdlLocation="${ticket.soap.wsdl}"
+                        service="TicketsPortService"
+                        port="TicketsPortSoap11"
+                        address="${ticket.soap.endpoint}"/>
+    </wsc:config>
 
     <flow name="health-flow">
         <http:listener config-ref="rest-listener-config"
@@ -29,6 +42,153 @@
                          status: "UP",
                          service: p("app.name")
                      }]'/>
+    </flow>
+
+    <flow name="get-tickets-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets"
+                       allowedMethods="GET">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+var sortValues = attributes.queryParams.*sort
+var filterValues = attributes.queryParams.*filter
+---
+t#getTicketsRequest: {
+    t#page: attributes.queryParams.page default 0,
+    t#size: attributes.queryParams.size default 10,
+    (t#sort: sortValues) if (!isEmpty(sortValues)),
+    (t#filter: filterValues) if (!isEmpty(filterValues))
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <wsc:consume config-ref="ticket-soap-config" operation="getTickets"/>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="objects"
+ns t http://soa.ifmo.ru/ticket/ws
+var body = read(payload.body, "application/xml")
+var items = body.t#getTicketsResponse.t#tickets.*t#ticket
+fun toTicket(item) = {
+    id: item.t#id as Number,
+    name: item.t#name as String,
+    coordinates: {
+        x: item.t#coordinates.t#x as Number,
+        y: item.t#coordinates.t#y as Number
+    },
+    creationDate: item.t#creationDate as String,
+    price: item.t#price as Number,
+    comment: item.t#comment as String,
+    type: item.t#type as String,
+    event: if (item.t#event?) {
+        id: item.t#event.t#id as Number,
+        name: item.t#event.t#name as String,
+        ticketsCount: item.t#event.t#ticketsCount as Number,
+        eventType: if (item.t#event.t#eventType?)
+            item.t#event.t#eventType as String
+        else null
+    } else null
+}
+---
+items map toTicket($)]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-ticket-by-id-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/{id}"
+                       allowedMethods="GET">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <set-variable variableName="ifNoneMatch"
+                      value="#[attributes.headers.'if-none-match' default null]"/>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+---
+t#getTicketByIdRequest: {
+    t#id: attributes.uriParams.id
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <wsc:consume config-ref="ticket-soap-config" operation="getTicketById"/>
+
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="etag"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml").t#getTicketByIdResponse.t#etag as String]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+
+        <choice>
+            <when expression="#[vars.ifNoneMatch != null and vars.ifNoneMatch == vars.etag]">
+                <set-variable variableName="httpStatus" value="304"/>
+                <set-variable variableName="outboundHeaders" value='#[{"ETag": vars.etag}]'/>
+                <set-payload value="#[null]"/>
+            </when>
+            <otherwise>
+                <set-variable variableName="httpStatus" value="200"/>
+                <set-variable variableName="outboundHeaders"
+                              value='#[{
+                                  "Content-Type": "application/json; charset=UTF-8",
+                                  "ETag": vars.etag
+                              }]'/>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="objects"
+ns t http://soa.ifmo.ru/ticket/ws
+var body = read(payload.body, "application/xml")
+var item = body.t#getTicketByIdResponse.t#ticket
+---
+{
+    id: item.t#id as Number,
+    name: item.t#name as String,
+    coordinates: {
+        x: item.t#coordinates.t#x as Number,
+        y: item.t#coordinates.t#y as Number
+    },
+    creationDate: item.t#creationDate as String,
+    price: item.t#price as Number,
+    comment: item.t#comment as String,
+    type: item.t#type as String,
+    event: if (item.t#event?) {
+        id: item.t#event.t#id as Number,
+        name: item.t#event.t#name as String,
+        ticketsCount: item.t#event.t#ticketsCount as Number,
+        eventType: if (item.t#event.t#eventType?)
+            item.t#event.t#eventType as String
+        else null
+    } else null
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
     </flow>
 
     <flow name="rest-api-fallback-flow">

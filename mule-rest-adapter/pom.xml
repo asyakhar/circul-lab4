@@ -16,6 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mule.maven.plugin.version>4.6.1</mule.maven.plugin.version>
         <mule.http.connector.version>1.10.6</mule.http.connector.version>
+        <mule.wsc.connector.version>2.1.4</mule.wsc.connector.version>
     </properties>
 
     <build>
@@ -34,6 +35,12 @@
             <groupId>org.mule.connectors</groupId>
             <artifactId>mule-http-connector</artifactId>
             <version>${mule.http.connector.version}</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-wsc-connector</artifactId>
+            <version>${mule.wsc.connector.version}</version>
             <classifier>mule-plugin</classifier>
         </dependency>
     </dependencies>

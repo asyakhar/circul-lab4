@@ -3,8 +3,8 @@
 This Mule 4 application restores the Ticket Service REST API from laboratory
 work 3 and delegates requests to the SOAP Ticket Service.
 
-This initial module contains the application skeleton only. Ticket operations
-and SOAP transformations are added in the following implementation blocks.
+The adapter keeps the laboratory work 3 REST contract and performs only
+transport-level conversion between REST/JSON and the SOAP Ticket Service.
 
 ## Requirements
 
@@ -45,9 +45,13 @@ The deployable Mule application is created in `target/`.
 
 ```text
 GET /health
+GET /api/v1/tickets
+GET /api/v1/tickets/{id}
 ANY /api/v1/*
 ```
 
-`GET /health` returns the adapter status. Until the REST operations are added,
-requests under `/api/v1/*` return a JSON `404` response using the legacy error
-shape.
+The ticket collection route preserves `page`, `size`, repeated `sort`, and
+repeated `filter` query parameters. The item route preserves the legacy `ETag`
+and `If-None-Match` behaviour. SOAP Fault mapping and the remaining write and
+query routes are added in the following integration blocks. Unknown routes
+under `/api/v1/*` return a JSON `404` response using the legacy error shape.
