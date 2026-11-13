@@ -1,0 +1,9 @@
+{
+  "name": "ticket-rest-adapter",
+  "minMuleVersion": "4.9.0",
+  "requiredProduct": "MULE_EE",
+  "configs": [
+    "ticket-rest-adapter.xml"
+  ],
+  "redeploymentEnabled": true
+}

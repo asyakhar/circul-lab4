@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core
+        http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http
+        http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <configuration-properties file="application.properties"/>
+
+    <http:listener-config name="rest-listener-config">
+        <http:listener-connection host="${http.host}" port="${http.port}"/>
+    </http:listener-config>
+
+    <flow name="health-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/health"
+                       allowedMethods="GET">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+        </http:listener>
+
+        <set-payload mimeType="application/json"
+                     value='#[output application/json --- {
+                         status: "UP",
+                         service: p("app.name")
+                     }]'/>
+    </flow>
+
+    <flow name="rest-api-fallback-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/*">
+            <http:response statusCode="#[vars.httpStatus default 404]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <set-variable variableName="httpStatus" value="404"/>
+        <set-variable variableName="outboundHeaders"
+                      value='#[{"Content-Type": "application/json; charset=UTF-8"}]'/>
+        <set-payload mimeType="application/json"
+                     value='#[output application/json --- {
+                         timestamp: (now() &gt;&gt; "UTC") as String {format: "dd.MM.yyyy HH:mm:ss"},
+                         status: 404,
+                         error: "Not Found",
+                         message: "Запрошенный REST-ресурс не найден.",
+                         path: attributes.requestPath
+                     }]'/>
+    </flow>
+</mule>
