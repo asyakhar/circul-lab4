@@ -46,12 +46,19 @@ The deployable Mule application is created in `target/`.
 ```text
 GET /health
 GET /api/v1/tickets
+POST /api/v1/tickets?ticket={json}
+OPTIONS /api/v1/tickets
 GET /api/v1/tickets/{id}
+PUT /api/v1/tickets/{id}?ticket={json}
+PATCH /api/v1/tickets/{id}?ticket={json}
+DELETE /api/v1/tickets/{id}
 ANY /api/v1/*
 ```
 
 The ticket collection route preserves `page`, `size`, repeated `sort`, and
 repeated `filter` query parameters. The item route preserves the legacy `ETag`
-and `If-None-Match` behaviour. SOAP Fault mapping and the remaining write and
-query routes are added in the following integration blocks. Unknown routes
-under `/api/v1/*` return a JSON `404` response using the legacy error shape.
+and `If-None-Match` behaviour. Write operations preserve the legacy URL-encoded
+JSON `ticket` query parameter, response statuses, `Location`, and `Allow`
+headers. SOAP Fault mapping and the special query routes are added in the
+following integration blocks. Unknown routes under `/api/v1/*` return a JSON
+`404` response using the legacy error shape.

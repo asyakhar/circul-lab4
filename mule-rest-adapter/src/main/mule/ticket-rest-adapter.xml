@@ -191,6 +191,250 @@ var item = body.t#getTicketByIdResponse.t#ticket
         </choice>
     </flow>
 
+    <flow name="create-ticket-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets"
+                       allowedMethods="POST">
+            <http:response statusCode="201">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+var ticket = read(attributes.queryParams.ticket, "application/json")
+fun eventInput(event) = {
+    t#name: event.name,
+    t#ticketsCount: event.ticketsCount,
+    (t#eventType: event.eventType) if (event.eventType?)
+}
+---
+t#createTicketRequest: {
+    t#ticket: {
+        t#name: ticket.name,
+        t#coordinates: {
+            t#x: ticket.coordinates.x,
+            t#y: ticket.coordinates.y
+        },
+        t#price: ticket.price,
+        t#comment: ticket.comment,
+        t#type: ticket.type,
+        (t#event: eventInput(ticket.event))
+            if (ticket.event? and ticket.event != null)
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <wsc:consume config-ref="ticket-soap-config" operation="createTicket"/>
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml").t#createTicketResponse.t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-response-to-json-subflow"/>
+        <set-variable variableName="outboundHeaders"
+                      value='#[{
+                          "Content-Type": "application/json; charset=UTF-8",
+                          "Location": "/api/v1/tickets/" ++ (payload.id as String)
+                      }]'/>
+    </flow>
+
+    <flow name="update-ticket-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/{id}"
+                       allowedMethods="PUT">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+var ticket = read(attributes.queryParams.ticket, "application/json")
+fun eventInput(event) = {
+    t#name: event.name,
+    t#ticketsCount: event.ticketsCount,
+    (t#eventType: event.eventType) if (event.eventType?)
+}
+---
+t#updateTicketRequest: {
+    t#id: attributes.uriParams.id,
+    t#ticket: {
+        t#name: ticket.name,
+        t#coordinates: {
+            t#x: ticket.coordinates.x,
+            t#y: ticket.coordinates.y
+        },
+        t#price: ticket.price,
+        t#comment: ticket.comment,
+        t#type: ticket.type,
+        (t#event: eventInput(ticket.event))
+            if (ticket.event? and ticket.event != null)
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <wsc:consume config-ref="ticket-soap-config" operation="updateTicket"/>
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml").t#updateTicketResponse.t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-response-to-json-subflow"/>
+    </flow>
+
+    <flow name="patch-ticket-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/{id}"
+                       allowedMethods="PATCH">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+ns xsi http://www.w3.org/2001/XMLSchema-instance
+var ticket = read(attributes.queryParams.ticket, "application/json")
+fun eventInput(event) = {
+    t#name: event.name,
+    t#ticketsCount: event.ticketsCount,
+    (t#eventType: event.eventType) if (event.eventType?)
+}
+---
+t#patchTicketRequest: {
+    t#id: attributes.uriParams.id,
+    t#ticket: {
+        (t#name: ticket.name) if (ticket.name?),
+        (t#coordinates: {
+            t#x: ticket.coordinates.x,
+            t#y: ticket.coordinates.y
+        }) if (ticket.coordinates?),
+        (t#price: ticket.price) if (ticket.price?),
+        (t#comment: ticket.comment) if (ticket.comment?),
+        (t#type: ticket.type) if (ticket.type?),
+        (t#event: eventInput(ticket.event))
+            if (ticket.event? and ticket.event != null),
+        (t#event @(xsi#nil: "true"): "")
+            if (ticket.event? and ticket.event == null)
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <wsc:consume config-ref="ticket-soap-config" operation="patchTicket"/>
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml").t#patchTicketResponse.t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-response-to-json-subflow"/>
+    </flow>
+
+    <flow name="delete-ticket-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/{id}"
+                       allowedMethods="DELETE">
+            <http:response statusCode="204"/>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+---
+t#deleteTicketRequest: {
+    t#id: attributes.uriParams.id
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <wsc:consume config-ref="ticket-soap-config" operation="deleteTicket"/>
+        <set-payload value="#[null]"/>
+    </flow>
+
+    <flow name="options-tickets-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets"
+                       allowedMethods="OPTIONS">
+            <http:response statusCode="204">
+                <http:headers>#[{"Allow": "GET, POST, OPTIONS"}]</http:headers>
+            </http:response>
+        </http:listener>
+        <set-payload value="#[null]"/>
+    </flow>
+
+    <sub-flow name="ticket-response-to-json-subflow">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="objects"
+ns t http://soa.ifmo.ru/ticket/ws
+var item = vars.soapTicket
+---
+{
+    id: item.t#id as Number,
+    name: item.t#name as String,
+    coordinates: {
+        x: item.t#coordinates.t#x as Number,
+        y: item.t#coordinates.t#y as Number
+    },
+    creationDate: item.t#creationDate as String,
+    price: item.t#price as Number,
+    comment: item.t#comment as String,
+    type: item.t#type as String,
+    event: if (item.t#event?) {
+        id: item.t#event.t#id as Number,
+        name: item.t#event.t#name as String,
+        ticketsCount: item.t#event.t#ticketsCount as Number,
+        eventType: if (item.t#event.t#eventType?)
+            item.t#event.t#eventType as String
+        else null
+    } else null
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </sub-flow>
+
     <flow name="rest-api-fallback-flow">
         <http:listener config-ref="rest-listener-config"
                        path="/api/v1/*">
