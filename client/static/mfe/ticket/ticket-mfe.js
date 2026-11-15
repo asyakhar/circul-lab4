@@ -16,7 +16,7 @@ const template = `
     </div>
     <div class="table-wrapper">
         <table>
-            <thead><tr><th>ID</th><th>Название</th><th>Координаты</th><th>Дата создания</th><th>Цена</th><th>Комментарий</th><th>Тип</th><th>Мероприятие</th></tr></thead>
+            <thead><tr><th>ID</th><th>Название</th><th>Координаты</th><th>Дата создания</th><th>Цена</th><th>Комментарий</th><th>Тип</th><th>Мероприятие</th><th>PDF</th></tr></thead>
             <tbody data-view="tickets"></tbody>
         </table>
     </div>
@@ -154,7 +154,7 @@ class TicketMfe extends HTMLElement {
         const body = this.querySelector('[data-view="tickets"]');
         const list = Array.isArray(tickets) ? tickets : tickets ? [tickets] : [];
         if (list.length === 0) {
-            body.innerHTML = '<tr><td colspan="8" class="empty">Билеты не найдены</td></tr>';
+            body.innerHTML = '<tr><td colspan="9" class="empty">Билеты не найдены</td></tr>';
             return;
         }
         body.innerHTML = list.map(ticket => `
@@ -164,6 +164,7 @@ class TicketMfe extends HTMLElement {
                 <td>${escapeHtml(ticket.creationDate)}</td><td>${escapeHtml(ticket.price)}</td>
                 <td>${escapeHtml(ticket.comment)}</td><td><span class="badge">${escapeHtml(ticket.type)}</span></td>
                 <td>${escapeHtml(this.eventText(ticket.event))}</td>
+                <td><a class="ticket-pdf-link" href="${escapeHtml(`${this.apiBase}/tickets/${ticket.id}/pdf`)}">PDF</a></td>
             </tr>`).join("");
     }
 

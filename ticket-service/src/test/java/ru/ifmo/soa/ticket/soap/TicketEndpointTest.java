@@ -1,5 +1,13 @@
 package ru.ifmo.soa.ticket.soap;
 
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -8,16 +16,25 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.ws.test.server.MockWebServiceClient;
+import org.springframework.ws.mime.Attachment;
+import org.springframework.ws.mime.MimeMessage;
 import org.springframework.xml.transform.StringSource;
 import ru.ifmo.soa.ticket.service.TicketQueryService;
 import ru.ifmo.soa.ticket.service.TicketStore;
 
 import javax.xml.transform.Source;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.awt.image.BufferedImage;
+import java.util.Iterator;
 import java.util.Map;
 
 import static org.springframework.ws.test.server.RequestCreators.withPayload;
 import static org.springframework.ws.test.server.ResponseMatchers.clientOrSenderFault;
 import static org.springframework.ws.test.server.ResponseMatchers.xpath;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TicketEndpointTest {
 
@@ -200,6 +217,60 @@ class TicketEndpointTest {
                         .evaluatesTo("ticket"));
     }
 
+    @Test
+    void downloadsPdfAsMtomAttachment() throws Exception {
+        createTicket("Билет в партер", "Место рядом со сценой", "VIP");
+
+        client.sendRequest(withPayload(xml("""
+                <t:downloadTicketRequest xmlns:t="http://soa.ifmo.ru/ticket/ws">
+                  <t:id>1</t:id>
+                </t:downloadTicketRequest>
+                """)))
+                .andExpect(xpath(
+                        "/t:downloadTicketResponse/t:fileName",
+                        NAMESPACES
+                ).evaluatesTo("circul-ticket-1.pdf"))
+                .andExpect((request, response) -> {
+                    assertTrue(response instanceof MimeMessage);
+                    MimeMessage mimeMessage = (MimeMessage) response;
+                    Iterator<Attachment> attachments = mimeMessage.getAttachments();
+                    assertTrue(attachments.hasNext());
+
+                    Attachment attachment = attachments.next();
+                    assertEquals("application/pdf", attachment.getContentType());
+                    byte[] pdf = attachment.getInputStream().readAllBytes();
+                    assertTrue(pdf.length > 10_000);
+                    assertArrayEquals("%PDF".getBytes(), java.util.Arrays.copyOf(pdf, 4));
+
+                    try (PDDocument document = Loader.loadPDF(pdf)) {
+                        BufferedImage page = new PDFRenderer(document)
+                                .renderImageWithDPI(0, 144);
+                        BufferedImage barcode = page.getSubimage(1280, 410, 235, 125);
+                        String decoded;
+                        try {
+                            decoded = new MultiFormatReader()
+                                    .decode(new BinaryBitmap(new HybridBinarizer(
+                                            new BufferedImageLuminanceSource(barcode)
+                                    )))
+                                    .getText();
+                        } catch (NotFoundException exception) {
+                            throw new AssertionError(
+                                    "Code 128 в готовом PDF не распознаётся.",
+                                    exception
+                            );
+                        }
+                        assertEquals("CIRCUL-00000001", decoded);
+                    }
+
+                    String previewPath = System.getProperty("ticket.pdf.preview");
+                    if (previewPath != null && !previewPath.isBlank()) {
+                        Path target = Path.of(previewPath);
+                        Files.createDirectories(target.getParent());
+                        Files.write(target, pdf);
+                    }
+                });
+    }
+
     private void createTicket(String name, String comment, String type) throws Exception {
         client.sendRequest(withPayload(xml("""
                 <t:createTicketRequest xmlns:t="http://soa.ifmo.ru/ticket/ws">
@@ -252,6 +323,11 @@ class TicketEndpointTest {
         }
 
         @Bean
+        TicketPdfService ticketPdfService() {
+            return new TicketPdfService();
+        }
+
+        @Bean
         LocalValidatorFactoryBean validator() {
             return new LocalValidatorFactoryBean();
         }
@@ -261,9 +337,16 @@ class TicketEndpointTest {
                 TicketStore store,
                 TicketQueryService queryService,
                 TicketSoapMapper mapper,
+                TicketPdfService pdfService,
                 LocalValidatorFactoryBean validator
         ) {
-            return new TicketEndpoint(store, queryService, mapper, validator);
+            return new TicketEndpoint(
+                    store,
+                    queryService,
+                    mapper,
+                    pdfService,
+                    validator
+            );
         }
     }
 }

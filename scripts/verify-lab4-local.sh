@@ -38,17 +38,28 @@ echo "Проверка client-compatible REST -> Mule -> SOAP..."
 create_response="$(curl -fsS -X POST "$MULE_API_URL/tickets?ticket=$encoded_ticket")"
 ticket_id="$("$PYTHON_BIN" -c 'import json, sys; print(json.load(sys.stdin)["id"])' <<<"$create_response")"
 person_id="$(date +%s)"
+pdf_file="$(mktemp)"
 
 cleanup() {
     curl -fsS -o /dev/null -X DELETE \
         "$BOOKING_API_URL/person/$person_id/cancel" 2>/dev/null || true
     curl -fsS -o /dev/null -X DELETE \
         "$MULE_API_URL/tickets/$ticket_id" 2>/dev/null || true
+    rm -f "$pdf_file"
 }
 trap cleanup EXIT
 
 curl -fsS "$MULE_API_URL/tickets/$ticket_id" \
     | "$PYTHON_BIN" -c 'import json, sys; data=json.load(sys.stdin); assert data["name"] == "Lab 4 integration check"'
+
+echo "Проверка PDF-билета через SOAP MTOM..."
+pdf_content_type="$(curl -fsS -o "$pdf_file" -w '%{content_type}' \
+    "$MULE_API_URL/tickets/$ticket_id/pdf")"
+if [[ "$pdf_content_type" != "application/pdf" ]]; then
+    echo "Ожидался application/pdf, получен $pdf_content_type" >&2
+    exit 1
+fi
+"$PYTHON_BIN" -c 'import pathlib, sys; data=pathlib.Path(sys.argv[1]).read_bytes(); assert data.startswith(b"%PDF"); assert len(data) > 10000' "$pdf_file"
 
 echo "Проверка SOAP Fault -> прежняя HTTP-ошибка..."
 fault_response="$(curl -sS -w $'\n%{http_code}' "$MULE_API_URL/tickets/-1")"

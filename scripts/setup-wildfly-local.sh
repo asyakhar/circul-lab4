@@ -35,13 +35,9 @@ create_server() {
             "$WILDFLY_HOME/standalone/configuration/." \
             "$base/configuration/"
 
-        sed_in_place \
-            '/<http-listener name="default"/d' \
-            "$base/configuration/standalone.xml"
-
-        sed_in_place \
-            's/connector-ref="default"/connector-ref="https"/' \
-            "$base/configuration/standalone.xml"
+        # Keep both listeners. The local Mule adapter calls Ticket Service over
+        # HTTP on port 8180, while HTTPS on 8543 remains available for a direct
+        # browser/SoapUI demonstration.
     fi
 }
 

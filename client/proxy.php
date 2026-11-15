@@ -147,7 +147,7 @@ if (!is_string($statusLine) || !preg_match('/^HTTP\/\d(?:\.\d)?\s+(\d{3})\b/', $
 $status = (int) $statusMatch[1];
 $isChunked = false;
 
-$allowedHeaders = ['content-type', 'location', 'etag', 'allow', 'x-booking-instance'];
+$allowedHeaders = ['content-type', 'content-disposition', 'location', 'etag', 'allow', 'x-booking-instance'];
 foreach ($responseHeaderLines as $headerLine) {
     if (!str_contains($headerLine, ':')) {
         continue;

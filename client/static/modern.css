@@ -278,6 +278,22 @@ button:focus-visible { outline: 3px solid #e7b94d; outline-offset: 3px; }
     background: linear-gradient(135deg, #d84452, #a82042);
     box-shadow: 0 4px 0 #771a35, 0 8px 18px rgba(126, 24, 54, .17);
 }
+.ticket-pdf-link {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border: 1px solid #9c263f;
+    border-radius: 10px;
+    color: #fff;
+    background: linear-gradient(135deg, #d84452, #a82042);
+    box-shadow: 0 3px 0 #771a35;
+    font-weight: 800;
+    text-decoration: none;
+}
+.ticket-pdf-link:hover { transform: translateY(-1px); }
+.ticket-pdf-link:focus-visible { outline: 3px solid #e7b94d; outline-offset: 3px; }
 .danger { background: linear-gradient(135deg, #a72b47, #751832); box-shadow: 0 4px 0 #511126; }
 .danger-zone { border-top-color: #eadbd0; }
 

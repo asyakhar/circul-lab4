@@ -2,6 +2,9 @@ package ru.ifmo.soa.ticket.soap;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.ws.context.MessageContext;
+import org.springframework.ws.mime.MimeMessage;
 import org.springframework.ws.server.endpoint.annotation.Endpoint;
 import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
 import org.springframework.ws.server.endpoint.annotation.RequestPayload;
@@ -19,6 +22,7 @@ import ru.ifmo.soa.ticket.soap.contract.CreateTicketRequest;
 import ru.ifmo.soa.ticket.soap.contract.CreateTicketResponse;
 import ru.ifmo.soa.ticket.soap.contract.DeleteTicketRequest;
 import ru.ifmo.soa.ticket.soap.contract.DeleteTicketResponse;
+import ru.ifmo.soa.ticket.soap.contract.DownloadTicketRequest;
 import ru.ifmo.soa.ticket.soap.contract.GetTicketByIdRequest;
 import ru.ifmo.soa.ticket.soap.contract.GetTicketByIdResponse;
 import ru.ifmo.soa.ticket.soap.contract.GetTicketWithMaxTypeRequest;
@@ -40,6 +44,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import javax.xml.transform.TransformerFactory;
+import org.springframework.xml.transform.StringSource;
 
 @Endpoint
 public class TicketEndpoint {
@@ -49,6 +55,7 @@ public class TicketEndpoint {
     private final TicketStore store;
     private final TicketQueryService queryService;
     private final TicketSoapMapper mapper;
+    private final TicketPdfService pdfService;
     private final Validator validator;
     private final ObjectFactory factory = new ObjectFactory();
 
@@ -56,11 +63,13 @@ public class TicketEndpoint {
             TicketStore store,
             TicketQueryService queryService,
             TicketSoapMapper mapper,
+            TicketPdfService pdfService,
             Validator validator
     ) {
         this.store = store;
         this.queryService = queryService;
         this.mapper = mapper;
+        this.pdfService = pdfService;
         this.validator = validator;
     }
 
@@ -112,6 +121,62 @@ public class TicketEndpoint {
             response.setTicket(mapper.toSoap(snapshot.ticket()));
             response.setEtag(store.buildEtag(snapshot));
             return response;
+        });
+    }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "downloadTicketRequest")
+    public void downloadTicket(
+            @RequestPayload DownloadTicketRequest request,
+            MessageContext messageContext
+    ) {
+        translateFaults(() -> {
+            requirePositiveId(request.getId());
+            Ticket ticket = store.findById(request.getId())
+                    .orElseThrow(() -> new TicketNotFoundException(request.getId()))
+                    .ticket();
+            TicketPdfService.GeneratedTicketPdf generated = pdfService.generate(ticket);
+
+            if (!(messageContext.getResponse() instanceof MimeMessage response)) {
+                throw new IllegalStateException("SOAP transport не поддерживает MTOM.");
+            }
+
+            String contentId = "ticket-" + ticket.getId() + "@circul";
+            String payload = """
+                    <t:downloadTicketResponse
+                            xmlns:t="http://soa.ifmo.ru/ticket/ws"
+                            xmlns:xop="http://www.w3.org/2004/08/xop/include">
+                      <t:fileName>%s</t:fileName>
+                      <t:contentType>application/pdf</t:contentType>
+                      <t:size>%d</t:size>
+                      <t:file><xop:Include href="cid:%s"/></t:file>
+                    </t:downloadTicketResponse>
+                    """.formatted(
+                    generated.fileName(),
+                    generated.content().length,
+                    contentId
+            );
+
+            try {
+                TransformerFactory.newInstance()
+                        .newTransformer()
+                        .transform(
+                                new StringSource(payload),
+                                response.getPayloadResult()
+                        );
+            } catch (Exception exception) {
+                throw new IllegalStateException(
+                        "Не удалось сформировать MTOM-ответ.",
+                        exception
+                );
+            }
+
+            response.addAttachment(
+                    contentId,
+                    new ByteArrayResource(generated.content()),
+                    "application/pdf"
+            );
+            response.convertToXopPackage();
+            return null;
         });
     }
 

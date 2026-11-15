@@ -23,7 +23,8 @@
         <wsc:connection wsdlLocation="${ticket.soap.wsdl}"
                         service="TicketsPortService"
                         port="TicketsPortSoap11"
-                        address="${ticket.soap.endpoint}"/>
+                        address="${ticket.soap.endpoint}"
+                        mtomEnabled="true"/>
     </wsc:config>
 
     <flow name="health-flow">
@@ -239,6 +240,43 @@ var item = body.t#getTicketByIdResponse.t#ticket
 }]'/>
             </otherwise>
         </choice>
+    </flow>
+
+    <flow name="download-ticket-pdf-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/{id}/pdf"
+                       allowedMethods="GET">
+            <http:response statusCode="200">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <set-payload value='#[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+---
+t#downloadTicketRequest: {
+    t#id: attributes.uriParams.id
+}]'/>
+
+        <wsc:consume config-ref="ticket-soap-config" operation="downloadTicket"/>
+
+        <set-variable variableName="pdfFileName" value='#[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+payload.body.t#downloadTicketResponse.t#fileName as String]'/>
+        <set-variable variableName="outboundHeaders"
+                      value='#[{
+                          "Content-Type": "application/pdf",
+                          "Content-Disposition": "attachment; filename=\"" ++ vars.pdfFileName ++ "\""
+                      }]' />
+        <set-payload value="#[payload.attachments[0]]"
+                     mimeType="application/pdf"/>
     </flow>
 
     <flow name="create-ticket-flow">

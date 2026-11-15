@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            xmlns:tns="http://soa.ifmo.ru/ticket/ws"
+           xmlns:xmime="http://www.w3.org/2005/05/xmlmime"
            targetNamespace="http://soa.ifmo.ru/ticket/ws"
            elementFormDefault="qualified">
 
@@ -120,6 +121,19 @@
         <xs:complexType><xs:sequence>
             <xs:element name="ticket" type="tns:Ticket"/>
             <xs:element name="etag" type="xs:string"/>
+        </xs:sequence></xs:complexType>
+    </xs:element>
+
+    <xs:element name="downloadTicketRequest">
+        <xs:complexType><xs:sequence><xs:element name="id" type="xs:long"/></xs:sequence></xs:complexType>
+    </xs:element>
+    <xs:element name="downloadTicketResponse">
+        <xs:complexType><xs:sequence>
+            <xs:element name="fileName" type="xs:string"/>
+            <xs:element name="contentType" type="xs:string"/>
+            <xs:element name="size" type="xs:long"/>
+            <xs:element name="file" type="xs:base64Binary"
+                        xmime:expectedContentTypes="application/pdf"/>
         </xs:sequence></xs:complexType>
     </xs:element>
 

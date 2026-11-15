@@ -80,6 +80,7 @@ def proxy_request(base_url, resource):
         "Location",
         "ETag",
         "Allow",
+        "Content-Disposition",
         "X-Booking-Instance",
     ):
         value = backend_response.headers.get(header_name)

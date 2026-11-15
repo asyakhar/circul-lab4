@@ -55,6 +55,7 @@ GET /api/v1/tickets/type-greater-than?type={value}
 POST /api/v1/tickets?ticket={json}
 OPTIONS /api/v1/tickets
 GET /api/v1/tickets/{id}
+GET /api/v1/tickets/{id}/pdf
 PUT /api/v1/tickets/{id}?ticket={json}
 PATCH /api/v1/tickets/{id}?ticket={json}
 DELETE /api/v1/tickets/{id}
@@ -69,3 +70,8 @@ headers. The three special query routes are also delegated to their SOAP
 operations. Structured SOAP Faults are converted back to the legacy JSON error
 shape and HTTP status, including field violations. Unknown routes under
 `/api/v1/*` return a JSON `404` response using the same legacy error shape.
+
+The optional PDF route calls the SOAP `downloadTicket` operation. The Web
+Service Consumer has MTOM enabled, extracts the binary attachment, and returns
+it as `application/pdf` with a download filename. No PDF generation logic is
+implemented in Mule.
