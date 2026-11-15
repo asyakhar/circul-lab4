@@ -24,6 +24,13 @@
 Для других адресов сервисов можно задать `TICKET_SERVICE_URL`,
 `BOOKING_SERVICE_URL` и `CLIENT_PORT`.
 
+Для лабораторной №4 клиент должен обращаться к Ticket Service через Mule.
+Готовый локальный запуск выставляет нужные адреса автоматически:
+
+```bash
+./scripts/run-client-lab4-local.sh
+```
+
 Для запуска клиента по HTTPS задайте одновременно `CLIENT_CERT_FILE` и
 `CLIENT_KEY_FILE` — пути к PEM-сертификату и его закрытому ключу. Имена
 `CLIENT_TLS_CERT` и `CLIENT_TLS_KEY` также поддерживаются для совместимости.

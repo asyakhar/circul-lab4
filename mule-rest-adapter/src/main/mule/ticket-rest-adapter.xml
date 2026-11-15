@@ -15,6 +15,7 @@
         http://www.mulesoft.org/schema/mule/ee/core
         http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 
+    <configuration defaultErrorHandler-ref="ticket-rest-error-handler"/>
     <configuration-properties file="application.properties"/>
 
     <http:listener-config name="rest-listener-config">
@@ -51,6 +52,10 @@
             <http:response statusCode="200">
                 <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
             </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
         </http:listener>
 
         <ee:transform>
@@ -73,36 +78,124 @@ t#getTicketsRequest: {
         <wsc:consume config-ref="ticket-soap-config" operation="getTickets"/>
 
         <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json skipNullOn="objects"
+            <ee:variables>
+                <ee:set-variable variableName="soapTickets"><![CDATA[%dw 2.0
+output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 var body = read(payload.body, "application/xml")
-var items = body.t#getTicketsResponse.t#tickets.*t#ticket
-fun toTicket(item) = {
-    id: item.t#id as Number,
-    name: item.t#name as String,
-    coordinates: {
-        x: item.t#coordinates.t#x as Number,
-        y: item.t#coordinates.t#y as Number
-    },
-    creationDate: item.t#creationDate as String,
-    price: item.t#price as Number,
-    comment: item.t#comment as String,
-    type: item.t#type as String,
-    event: if (item.t#event?) {
-        id: item.t#event.t#id as Number,
-        name: item.t#event.t#name as String,
-        ticketsCount: item.t#event.t#ticketsCount as Number,
-        eventType: if (item.t#event.t#eventType?)
-            item.t#event.t#eventType as String
-        else null
-    } else null
-}
 ---
-items map toTicket($)]]></ee:set-payload>
+body.t#getTicketsResponse.t#tickets.*t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-list-response-to-json-subflow"/>
+    </flow>
+
+    <flow name="get-ticket-with-max-type-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/max-type"
+                       allowedMethods="GET">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <set-payload mimeType="application/xml"
+                     value='#[output application/xml
+                         ns t http://soa.ifmo.ru/ticket/ws
+                         --- t#getTicketWithMaxTypeRequest: {}]'/>
+        <wsc:consume config-ref="ticket-soap-config" operation="getTicketWithMaxType"/>
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml").t#getTicketWithMaxTypeResponse.t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-response-to-json-subflow"/>
+    </flow>
+
+    <flow name="get-tickets-by-comment-substring-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/comment-contains"
+                       allowedMethods="GET">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+---
+t#getTicketsByCommentSubstringRequest: {
+    t#substring: attributes.queryParams.substring
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
+        <wsc:consume config-ref="ticket-soap-config"
+                     operation="getTicketsByCommentSubstring"/>
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="soapTickets"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml")
+    .t#getTicketsByCommentSubstringResponse.t#tickets.*t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-list-response-to-json-subflow"/>
+    </flow>
+
+    <flow name="get-tickets-with-type-greater-than-flow">
+        <http:listener config-ref="rest-listener-config"
+                       path="/api/v1/tickets/type-greater-than"
+                       allowedMethods="GET">
+            <http:response statusCode="200">
+                <http:headers>#[{"Content-Type": "application/json; charset=UTF-8"}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns t http://soa.ifmo.ru/ticket/ws
+---
+t#getTicketsWithTypeGreaterThanRequest: {
+    t#type: attributes.queryParams.type
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <wsc:consume config-ref="ticket-soap-config"
+                     operation="getTicketsWithTypeGreaterThan"/>
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="soapTickets"><![CDATA[%dw 2.0
+output application/java
+ns t http://soa.ifmo.ru/ticket/ws
+---
+read(payload.body, "application/xml")
+    .t#getTicketsWithTypeGreaterThanResponse.t#tickets.*t#ticket]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref name="ticket-list-response-to-json-subflow"/>
     </flow>
 
     <flow name="get-ticket-by-id-flow">
@@ -434,6 +527,95 @@ var item = vars.soapTicket
             </ee:message>
         </ee:transform>
     </sub-flow>
+
+    <sub-flow name="ticket-list-response-to-json-subflow">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="objects"
+ns t http://soa.ifmo.ru/ticket/ws
+fun toTicket(item) = {
+    id: item.t#id as Number,
+    name: item.t#name as String,
+    coordinates: {
+        x: item.t#coordinates.t#x as Number,
+        y: item.t#coordinates.t#y as Number
+    },
+    creationDate: item.t#creationDate as String,
+    price: item.t#price as Number,
+    comment: item.t#comment as String,
+    type: item.t#type as String,
+    event: if (item.t#event?) {
+        id: item.t#event.t#id as Number,
+        name: item.t#event.t#name as String,
+        ticketsCount: item.t#event.t#ticketsCount as Number,
+        eventType: if (item.t#event.t#eventType?)
+            item.t#event.t#eventType as String
+        else null
+    } else null
+}
+---
+vars.soapTickets map toTicket($)]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </sub-flow>
+
+    <error-handler name="ticket-rest-error-handler">
+        <on-error-propagate type="WSC:SOAP_FAULT" logException="true">
+            <ee:transform>
+                <ee:variables>
+                    <ee:set-variable variableName="soapFault"><![CDATA[%dw 2.0
+output application/java
+ns soap11 http://schemas.xmlsoap.org/soap/envelope/
+ns soap12 http://www.w3.org/2003/05/soap-envelope
+ns t http://soa.ifmo.ru/ticket/ws
+var rawDetail = error.errorMessage.payload.detail default "<detail/>"
+var document = read(rawDetail, "application/xml")
+var detail = document.detail
+    default document.soap11#detail
+    default document.soap12#Detail
+    default document
+---
+{
+    status: (detail.t#status default 500) as Number,
+    code: (detail.t#code default "INTERNAL_ERROR") as String,
+    message: (detail.t#message default error.description
+        default "Внутренняя ошибка SOAP-сервиса.") as String,
+    field: if (detail.t#field?) detail.t#field as String else null
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+
+            <set-variable variableName="httpStatus" value="#[vars.soapFault.status]"/>
+            <set-variable variableName="outboundHeaders"
+                          value='#[{"Content-Type": "application/json; charset=UTF-8"}]'/>
+            <ee:transform>
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="objects"
+var status = vars.soapFault.status
+var errorName =
+    if (status == 400) "Bad Request"
+    else if (status == 404) "Not Found"
+    else if (status == 409) "Conflict"
+    else if (status == 422) "Unprocessable Content"
+    else "Internal Server Error"
+---
+{
+    timestamp: (now() >> "UTC") as String {format: "dd.MM.yyyy HH:mm:ss"},
+    status: status,
+    error: errorName,
+    message: vars.soapFault.message,
+    path: attributes.requestPath,
+    (violations: [{
+        field: vars.soapFault.field,
+        message: vars.soapFault.message
+    }]) if (vars.soapFault.field != null)
+}]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+        </on-error-propagate>
+    </error-handler>
 
     <flow name="rest-api-fallback-flow">
         <http:listener config-ref="rest-listener-config"

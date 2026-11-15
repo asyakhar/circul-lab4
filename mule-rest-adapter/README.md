@@ -20,8 +20,8 @@ Default values are defined in `src/main/resources/application.properties`:
 | --- | --- | --- |
 | `http.host` | `0.0.0.0` | REST listener interface |
 | `http.port` | `8083` | REST listener port |
-| `ticket.soap.wsdl` | `http://127.0.0.1:8081/ticket-service/ws/tickets.wsdl` | Ticket WSDL URL |
-| `ticket.soap.endpoint` | `http://127.0.0.1:8081/ticket-service/ws` | SOAP request URL |
+| `ticket.soap.wsdl` | `http://127.0.0.1:8180/ticket-service/ws/tickets.wsdl` | Ticket WSDL URL |
+| `ticket.soap.endpoint` | `http://127.0.0.1:8180/ticket-service/ws` | SOAP request URL |
 
 Every property can be overridden with a Mule command-line property, for
 example:
@@ -39,13 +39,19 @@ example:
 mvn clean package
 ```
 
-The deployable Mule application is created in `target/`.
+The deployable Mule application is created in `target/`. From the repository
+root, `MULE_HOME=/path/to/mule ./scripts/run-mule-local.sh` copies it to an
+installed Mule Runtime and runs the adapter against the local WildFly Ticket
+Service.
 
 ## Current endpoints
 
 ```text
 GET /health
 GET /api/v1/tickets
+GET /api/v1/tickets/max-type
+GET /api/v1/tickets/comment-contains?substring={value}
+GET /api/v1/tickets/type-greater-than?type={value}
 POST /api/v1/tickets?ticket={json}
 OPTIONS /api/v1/tickets
 GET /api/v1/tickets/{id}
@@ -59,6 +65,7 @@ The ticket collection route preserves `page`, `size`, repeated `sort`, and
 repeated `filter` query parameters. The item route preserves the legacy `ETag`
 and `If-None-Match` behaviour. Write operations preserve the legacy URL-encoded
 JSON `ticket` query parameter, response statuses, `Location`, and `Allow`
-headers. SOAP Fault mapping and the special query routes are added in the
-following integration blocks. Unknown routes under `/api/v1/*` return a JSON
-`404` response using the legacy error shape.
+headers. The three special query routes are also delegated to their SOAP
+operations. Structured SOAP Faults are converted back to the legacy JSON error
+shape and HTTP status, including field violations. Unknown routes under
+`/api/v1/*` return a JSON `404` response using the same legacy error shape.
