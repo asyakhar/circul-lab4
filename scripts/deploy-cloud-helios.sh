@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-HELIOS_USER="${HELIOS_USER:-s409792}"
+HELIOS_USER="${HELIOS_USER:-s408303}"
 HELIOS_HOST="${HELIOS_HOST:-helios.cs.ifmo.ru}"
 HELIOS_SSH_PORT="${HELIOS_SSH_PORT:-2222}"
 HELIOS_REMOTE_DIR="${HELIOS_REMOTE_DIR:-circul-cloud}"

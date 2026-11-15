@@ -6,10 +6,18 @@ LAB2_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WILDFLY_VERSION="41.0.1.Final"
 WILDFLY_NAME="wildfly-ee-10-${WILDFLY_VERSION}"
 WILDFLY_DIR="$LAB2_DIR/wildfly/$WILDFLY_NAME"
+SHARED_WILDFLY_DIR="${SHARED_WILDFLY_DIR:-$HOME/soa-lab-2/wildfly/$WILDFLY_NAME}"
 DOWNLOAD_URL="https://github.com/wildfly/wildfly/releases/download/${WILDFLY_VERSION}/${WILDFLY_NAME}.tar.gz"
 
 if [[ -x "$WILDFLY_DIR/bin/standalone.sh" ]]; then
     echo "WildFly уже установлен."
+    exit 0
+fi
+
+if [[ -x "$SHARED_WILDFLY_DIR/bin/standalone.sh" ]]; then
+    mkdir -p "$LAB2_DIR/wildfly"
+    ln -s "$SHARED_WILDFLY_DIR" "$WILDFLY_DIR"
+    echo "Используется существующий WildFly: $SHARED_WILDFLY_DIR"
     exit 0
 fi
 

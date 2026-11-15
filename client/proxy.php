@@ -2,11 +2,10 @@
 declare(strict_types=1);
 
 const API_HOST = '127.0.0.1';
-const API_PORT = 18530;
 
 $services = [
-    'ticket' => '/api/v1',
-    'booking' => '/booking',
+    'ticket' => ['port' => 18083, 'prefix' => '/api/v1'],
+    'booking' => ['port' => 18130, 'prefix' => '/booking'],
 ];
 
 function sendJsonError(int $status, string $error, string $message): never
@@ -82,7 +81,9 @@ if (
     sendJsonError(400, 'Bad Request', 'Некорректный адрес сервиса.');
 }
 
-$requestPath = $services[$service] . $rawPath;
+$serviceConfig = $services[$service];
+$apiPort = $serviceConfig['port'];
+$requestPath = $serviceConfig['prefix'] . $rawPath;
 $transportMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $methodOverride = strtoupper((string) ($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] ?? ''));
 $method = $transportMethod === 'POST' && in_array($methodOverride, ['DELETE', 'PUT', 'PATCH'], true)
@@ -98,7 +99,7 @@ if ($requestBody === false) {
 }
 
 $requestHeaders = [
-    'Host: ' . API_HOST . ':' . API_PORT,
+    'Host: ' . API_HOST . ':' . $apiPort,
     'Connection: close',
 ];
 
@@ -124,23 +125,23 @@ $context = stream_context_create([
     ],
 ]);
 
-$target = 'http://' . API_HOST . ':' . API_PORT . $requestPath;
+$target = 'http://' . API_HOST . ':' . $apiPort . $requestPath;
 $responseBody = @file_get_contents($target, false, $context);
 if ($responseBody === false) {
     $lastError = error_get_last();
     $details = is_array($lastError) && isset($lastError['message'])
         ? (string) $lastError['message']
         : 'неизвестная ошибка';
-    sendJsonError(502, 'Bad Gateway', 'Не удалось подключиться к API Gateway: ' . $details);
+    sendJsonError(502, 'Bad Gateway', 'Не удалось подключиться к сервису: ' . $details);
 }
 
 $responseHeaderLines = $http_response_header ?? [];
 if ($responseHeaderLines === []) {
-    sendJsonError(502, 'Bad Gateway', 'API Gateway не вернул HTTP-заголовки.');
+    sendJsonError(502, 'Bad Gateway', 'Сервис не вернул HTTP-заголовки.');
 }
 $statusLine = array_shift($responseHeaderLines);
 if (!is_string($statusLine) || !preg_match('/^HTTP\/\d(?:\.\d)?\s+(\d{3})\b/', $statusLine, $statusMatch)) {
-    sendJsonError(502, 'Bad Gateway', 'API Gateway вернул некорректный статус.');
+    sendJsonError(502, 'Bad Gateway', 'Сервис вернул некорректный статус.');
 }
 
 $status = (int) $statusMatch[1];

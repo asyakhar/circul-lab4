@@ -3,11 +3,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-HELIOS_USER="${HELIOS_USER:-s409792}"
+HELIOS_USER="${HELIOS_USER:-s408303}"
 HELIOS_HOST="${HELIOS_HOST:-helios.cs.ifmo.ru}"
 HELIOS_SSH_PORT="${HELIOS_SSH_PORT:-2222}"
 PUBLIC_PATH="${PUBLIC_PATH:-circul}"
 HELIOS_KEY="${HELIOS_KEY:-}"
+
+if [[ -z "$HELIOS_KEY" && -r "$HOME/.ssh/helios/main" ]]; then
+    HELIOS_KEY="$HOME/.ssh/helios/main"
+fi
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/circul-se.XXXXXX")"
 ARCHIVE="$TMP_DIR/circul-public.tgz"
@@ -40,16 +44,6 @@ scp "${SCP_OPTIONS[@]}" "$ARCHIVE" \
 
 ssh "${SSH_OPTIONS[@]}" "$HELIOS_USER@$HELIOS_HOST" \
     "set -e; \
-     tunnel_pid=''; \
-     if [ -r \"\$HOME/circul-cloud/.run/cloud/public-tunnel.pid\" ]; then \
-         IFS= read -r tunnel_pid < \"\$HOME/circul-cloud/.run/cloud/public-tunnel.pid\" || true; \
-     fi; \
-     case \"\$tunnel_pid\" in (*[!0-9]*|'') ;; (*) kill -9 \"\$tunnel_pid\" 2>/dev/null || true ;; esac; \
-     client_pid=''; \
-     if [ -r \"\$HOME/circul-cloud/.run/cloud/client.pid\" ]; then \
-         IFS= read -r client_pid < \"\$HOME/circul-cloud/.run/cloud/client.pid\" || true; \
-     fi; \
-     case \"\$client_pid\" in (*[!0-9]*|'') ;; (*) kill -9 \"\$client_pid\" 2>/dev/null || true ;; esac; \
      public_dir=\"\$HOME/public_html/$PUBLIC_PATH\"; \
      mkdir -p \"\$public_dir\"; \
      tar -xzf \"\$HOME/circul-public.tgz\" -C \"\$public_dir\"; \

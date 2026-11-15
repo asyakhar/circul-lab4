@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HELIOS_USER="${HELIOS_USER:-${1:-s409792}}"
+HELIOS_USER="${HELIOS_USER:-${1:-s408303}}"
 HELIOS_HOST="${HELIOS_HOST:-helios.cs.ifmo.ru}"
 HELIOS_KEY="${HELIOS_KEY:-}"
 

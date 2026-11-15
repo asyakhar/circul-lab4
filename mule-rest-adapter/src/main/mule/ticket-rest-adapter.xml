@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
       xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
@@ -11,9 +10,7 @@
         http://www.mulesoft.org/schema/mule/http
         http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
         http://www.mulesoft.org/schema/mule/wsc
-        http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
-        http://www.mulesoft.org/schema/mule/ee/core
-        http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
 
     <configuration defaultErrorHandler-ref="ticket-rest-error-handler"/>
     <configuration-properties file="application.properties"/>
@@ -58,9 +55,7 @@
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 var sortValues = attributes.queryParams.*sort
@@ -71,22 +66,16 @@ t#getTicketsRequest: {
     t#size: attributes.queryParams.size default 10,
     (t#sort: sortValues) if (!isEmpty(sortValues)),
     (t#filter: filterValues) if (!isEmpty(filterValues))
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="getTickets"/>
 
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTickets"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTickets" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
-var body = read(payload.body, "application/xml")
+var body = payload.body
 ---
-body.t#getTicketsResponse.t#tickets.*t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+body.t#getTicketsResponse.t#tickets.*t#ticket]'/>
         <flow-ref name="ticket-list-response-to-json-subflow"/>
     </flow>
 
@@ -108,15 +97,11 @@ body.t#getTicketsResponse.t#tickets.*t#ticket]]></ee:set-variable>
                          ns t http://soa.ifmo.ru/ticket/ws
                          --- t#getTicketWithMaxTypeRequest: {}]'/>
         <wsc:consume config-ref="ticket-soap-config" operation="getTicketWithMaxType"/>
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTicket" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml").t#getTicketWithMaxTypeResponse.t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body.t#getTicketWithMaxTypeResponse.t#ticket]'/>
         <flow-ref name="ticket-response-to-json-subflow"/>
     </flow>
 
@@ -133,29 +118,21 @@ read(payload.body, "application/xml").t#getTicketWithMaxTypeResponse.t#ticket]]>
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 ---
 t#getTicketsByCommentSubstringRequest: {
     t#substring: attributes.queryParams.substring
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
         <wsc:consume config-ref="ticket-soap-config"
                      operation="getTicketsByCommentSubstring"/>
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTickets"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTickets" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml")
-    .t#getTicketsByCommentSubstringResponse.t#tickets.*t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body
+    .t#getTicketsByCommentSubstringResponse.t#tickets.*t#ticket]'/>
         <flow-ref name="ticket-list-response-to-json-subflow"/>
     </flow>
 
@@ -172,29 +149,21 @@ read(payload.body, "application/xml")
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 ---
 t#getTicketsWithTypeGreaterThanRequest: {
-    t#type: attributes.queryParams.type
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+    t#&apos;type&apos;: attributes.queryParams.&apos;type&apos;
+}]'/>
         <wsc:consume config-ref="ticket-soap-config"
                      operation="getTicketsWithTypeGreaterThan"/>
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTickets"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTickets" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml")
-    .t#getTicketsWithTypeGreaterThanResponse.t#tickets.*t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body
+    .t#getTicketsWithTypeGreaterThanResponse.t#tickets.*t#ticket]'/>
         <flow-ref name="ticket-list-response-to-json-subflow"/>
     </flow>
 
@@ -213,29 +182,21 @@ read(payload.body, "application/xml")
 
         <set-variable variableName="ifNoneMatch"
                       value="#[attributes.headers.'if-none-match' default null]"/>
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 ---
 t#getTicketByIdRequest: {
     t#id: attributes.uriParams.id
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="getTicketById"/>
 
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="etag"><![CDATA[%dw 2.0
+        <set-variable variableName="etag" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml").t#getTicketByIdResponse.t#etag as String]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body.t#getTicketByIdResponse.t#etag as String]'/>
 
         <choice>
             <when expression="#[vars.ifNoneMatch != null and vars.ifNoneMatch == vars.etag]">
@@ -250,12 +211,10 @@ read(payload.body, "application/xml").t#getTicketByIdResponse.t#etag as String]]
                                   "Content-Type": "application/json; charset=UTF-8",
                                   "ETag": vars.etag
                               }]'/>
-                <ee:transform>
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
+                <set-payload value='#[%dw 2.0
 output application/json skipNullOn="objects"
 ns t http://soa.ifmo.ru/ticket/ws
-var body = read(payload.body, "application/xml")
+var body = payload.body
 var item = body.t#getTicketByIdResponse.t#ticket
 ---
 {
@@ -268,7 +227,7 @@ var item = body.t#getTicketByIdResponse.t#ticket
     creationDate: item.t#creationDate as String,
     price: item.t#price as Number,
     comment: item.t#comment as String,
-    type: item.t#type as String,
+    "type": item.t#&apos;type&apos; as String,
     event: if (item.t#event?) {
         id: item.t#event.t#id as Number,
         name: item.t#event.t#name as String,
@@ -277,9 +236,7 @@ var item = body.t#getTicketByIdResponse.t#ticket
             item.t#event.t#eventType as String
         else null
     } else null
-}]]></ee:set-payload>
-                    </ee:message>
-                </ee:transform>
+}]'/>
             </otherwise>
         </choice>
     </flow>
@@ -297,9 +254,7 @@ var item = body.t#getTicketByIdResponse.t#ticket
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 var ticket = read(attributes.queryParams.ticket, "application/json")
@@ -318,24 +273,18 @@ t#createTicketRequest: {
         },
         t#price: ticket.price,
         t#comment: ticket.comment,
-        t#type: ticket.type,
+        t#&apos;type&apos;: ticket.&apos;type&apos;,
         (t#event: eventInput(ticket.event))
             if (ticket.event? and ticket.event != null)
     }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="createTicket"/>
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTicket" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml").t#createTicketResponse.t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body.t#createTicketResponse.t#ticket]'/>
         <flow-ref name="ticket-response-to-json-subflow"/>
         <set-variable variableName="outboundHeaders"
                       value='#[{
@@ -357,9 +306,7 @@ read(payload.body, "application/xml").t#createTicketResponse.t#ticket]]></ee:set
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 var ticket = read(attributes.queryParams.ticket, "application/json")
@@ -379,24 +326,18 @@ t#updateTicketRequest: {
         },
         t#price: ticket.price,
         t#comment: ticket.comment,
-        t#type: ticket.type,
+        t#&apos;type&apos;: ticket.&apos;type&apos;,
         (t#event: eventInput(ticket.event))
             if (ticket.event? and ticket.event != null)
     }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="updateTicket"/>
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTicket" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml").t#updateTicketResponse.t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body.t#updateTicketResponse.t#ticket]'/>
         <flow-ref name="ticket-response-to-json-subflow"/>
     </flow>
 
@@ -413,9 +354,7 @@ read(payload.body, "application/xml").t#updateTicketResponse.t#ticket]]></ee:set
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 ns xsi http://www.w3.org/2001/XMLSchema-instance
@@ -436,26 +375,20 @@ t#patchTicketRequest: {
         }) if (ticket.coordinates?),
         (t#price: ticket.price) if (ticket.price?),
         (t#comment: ticket.comment) if (ticket.comment?),
-        (t#type: ticket.type) if (ticket.type?),
+        (t#&apos;type&apos;: ticket.&apos;type&apos;) if (ticket.&apos;type&apos;?),
         (t#event: eventInput(ticket.event))
             if (ticket.event? and ticket.event != null),
         (t#event @(xsi#nil: "true"): "")
             if (ticket.event? and ticket.event == null)
     }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="patchTicket"/>
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="soapTicket"><![CDATA[%dw 2.0
+        <set-variable variableName="soapTicket" value='#[%dw 2.0
 output application/java
 ns t http://soa.ifmo.ru/ticket/ws
 ---
-read(payload.body, "application/xml").t#patchTicketResponse.t#ticket]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+payload.body.t#patchTicketResponse.t#ticket]'/>
         <flow-ref name="ticket-response-to-json-subflow"/>
     </flow>
 
@@ -470,17 +403,13 @@ read(payload.body, "application/xml").t#patchTicketResponse.t#ticket]]></ee:set-
             </http:error-response>
         </http:listener>
 
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/xml
 ns t http://soa.ifmo.ru/ticket/ws
 ---
 t#deleteTicketRequest: {
     t#id: attributes.uriParams.id
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
         <wsc:consume config-ref="ticket-soap-config" operation="deleteTicket"/>
         <set-payload value="#[null]"/>
     </flow>
@@ -497,9 +426,7 @@ t#deleteTicketRequest: {
     </flow>
 
     <sub-flow name="ticket-response-to-json-subflow">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/json skipNullOn="objects"
 ns t http://soa.ifmo.ru/ticket/ws
 var item = vars.soapTicket
@@ -514,7 +441,7 @@ var item = vars.soapTicket
     creationDate: item.t#creationDate as String,
     price: item.t#price as Number,
     comment: item.t#comment as String,
-    type: item.t#type as String,
+    "type": item.t#&apos;type&apos; as String,
     event: if (item.t#event?) {
         id: item.t#event.t#id as Number,
         name: item.t#event.t#name as String,
@@ -523,15 +450,11 @@ var item = vars.soapTicket
             item.t#event.t#eventType as String
         else null
     } else null
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+}]'/>
     </sub-flow>
 
     <sub-flow name="ticket-list-response-to-json-subflow">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
+        <set-payload value='#[%dw 2.0
 output application/json skipNullOn="objects"
 ns t http://soa.ifmo.ru/ticket/ws
 fun toTicket(item) = {
@@ -544,7 +467,7 @@ fun toTicket(item) = {
     creationDate: item.t#creationDate as String,
     price: item.t#price as Number,
     comment: item.t#comment as String,
-    type: item.t#type as String,
+    "type": item.t#&apos;type&apos; as String,
     event: if (item.t#event?) {
         id: item.t#event.t#id as Number,
         name: item.t#event.t#name as String,
@@ -555,21 +478,17 @@ fun toTicket(item) = {
     } else null
 }
 ---
-vars.soapTickets map toTicket($)]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+(vars.soapTickets default []) map toTicket($)]'/>
     </sub-flow>
 
     <error-handler name="ticket-rest-error-handler">
         <on-error-propagate type="WSC:SOAP_FAULT" logException="true">
-            <ee:transform>
-                <ee:variables>
-                    <ee:set-variable variableName="soapFault"><![CDATA[%dw 2.0
+            <set-variable variableName="soapFault" value='#[%dw 2.0
 output application/java
 ns soap11 http://schemas.xmlsoap.org/soap/envelope/
 ns soap12 http://www.w3.org/2003/05/soap-envelope
 ns t http://soa.ifmo.ru/ticket/ws
-var rawDetail = error.errorMessage.payload.detail default "<detail/>"
+var rawDetail = error.errorMessage.payload.detail default "&lt;detail/>"
 var document = read(rawDetail, "application/xml")
 var detail = document.detail
     default document.soap11#detail
@@ -582,16 +501,12 @@ var detail = document.detail
     message: (detail.t#message default error.description
         default "Внутренняя ошибка SOAP-сервиса.") as String,
     field: if (detail.t#field?) detail.t#field as String else null
-}]]></ee:set-variable>
-                </ee:variables>
-            </ee:transform>
+}]'/>
 
             <set-variable variableName="httpStatus" value="#[vars.soapFault.status]"/>
             <set-variable variableName="outboundHeaders"
                           value='#[{"Content-Type": "application/json; charset=UTF-8"}]'/>
-            <ee:transform>
-                <ee:message>
-                    <ee:set-payload><![CDATA[%dw 2.0
+            <set-payload value='#[%dw 2.0
 output application/json skipNullOn="objects"
 var status = vars.soapFault.status
 var errorName =
@@ -611,9 +526,7 @@ var errorName =
         field: vars.soapFault.field,
         message: vars.soapFault.message
     }]) if (vars.soapFault.field != null)
-}]]></ee:set-payload>
-                </ee:message>
-            </ee:transform>
+}]'/>
         </on-error-propagate>
     </error-handler>
 
