@@ -151,7 +151,7 @@ start_ticket() {
     touch "$deployment.dodeploy"
     : >"$log_file"
 
-    export JAVA_OPTS="-Xms32m -Xmx160m -XX:MaxMetaspaceSize=144m -Xss256k -XX:ActiveProcessorCount=1 -XX:+UseSerialGC -Dorg.jboss.weld.bootstrap.concurrentDeployment=false --add-opens=java.base/java.util=ALL-UNNAMED"
+    export JAVA_OPTS="-Xms32m -Xmx160m -XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=64m -Xss256k -XX:ActiveProcessorCount=1 -XX:+UseSerialGC -Dorg.jboss.weld.bootstrap.concurrentDeployment=false --add-opens=java.base/java.util=ALL-UNNAMED"
     nohup "$WILDFLY_HOME/bin/standalone.sh" \
         -Djboss.server.base.dir="$WILDFLY_TICKET_BASE" \
         -Djboss.socket.binding.port-offset="$TICKET_OFFSET" \
