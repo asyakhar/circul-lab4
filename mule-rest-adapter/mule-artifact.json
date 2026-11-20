@@ -1,9 +1,12 @@
 {
   "name": "ticket-rest-adapter",
-  "minMuleVersion": "4.9.0",
+  "minMuleVersion": "4.13.0",
   "requiredProduct": "MULE",
   "configs": [
     "ticket-rest-adapter.xml"
   ],
-  "redeploymentEnabled": true
+  "redeploymentEnabled": true,
+  "javaSpecificationVersions": [
+    "17"
+  ]
 }

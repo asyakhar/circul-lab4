@@ -31,6 +31,37 @@
 ./scripts/run-client-lab4-local.sh
 ```
 
+## Отправка PDF-билета на почту
+
+Локальный Flask-клиент показывает кнопку «На почту», когда заданы
+`SMTP_HOST` и `SMTP_FROM`. Получатель вводит адрес в форме. Flask скачивает
+PDF по существующему маршруту Mule и передаёт письмо с вложением SMTP-серверу.
+
+Для проверки на Mac можно запустить локальный почтовый ящик [Mailpit](https://mailpit.axllent.org/docs/install/):
+
+```bash
+brew install mailpit
+mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
+```
+
+При запущенных WildFly и Mule перезапустите клиент из корня проекта:
+
+```bash
+SMTP_HOST=127.0.0.1 SMTP_SECURITY=plain SMTP_FROM=tickets@example.test \
+  CLIENT_PORT=5001 ./scripts/run-client-lab4-local.sh
+```
+
+На [странице клиента](https://localhost:5001) выберите билет, нажмите «На почту»
+и введите, например, `demo@example.test`. Письмо с PDF появится в
+[локальном ящике Mailpit](http://127.0.0.1:8025).
+
+Для доставки на реальный адрес задайте `SMTP_HOST` и `SMTP_FROM` своего
+почтового провайдера, а при необходимости также `SMTP_USERNAME` и
+`SMTP_PASSWORD`. По умолчанию используется `SMTP_SECURITY=starttls` на порту
+587. Для TLS сразу при подключении используйте `SMTP_SECURITY=ssl` (порт 465).
+При необходимости переопределите порт через `SMTP_PORT`. Секреты передавайте
+через окружение процесса.
+
 Для запуска клиента по HTTPS задайте одновременно `CLIENT_CERT_FILE` и
 `CLIENT_KEY_FILE` — пути к PEM-сертификату и его закрытому ключу. Имена
 `CLIENT_TLS_CERT` и `CLIENT_TLS_KEY` также поддерживаются для совместимости.

@@ -1,8 +1,12 @@
 import os
+import smtplib
+from ipaddress import ip_address
+from urllib.parse import urlsplit
 
 import requests
 import urllib3
 from flask import Flask, Response, jsonify, render_template, request
+from ticket_mail import email_address, send_ticket_email
 try:
     from opentelemetry import trace
 except ImportError:
@@ -44,7 +48,52 @@ def expose_trace_id(response):
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    email_enabled = all(os.getenv(name) for name in ("SMTP_HOST", "SMTP_FROM"))
+    return render_template("index.html", ticket_email_enabled=email_enabled)
+
+
+@app.post("/api/tickets/<int:ticket_id>/email")
+def email_ticket(ticket_id):
+    if (
+        not request.remote_addr
+        or not ip_address(request.remote_addr).is_loopback
+        or urlsplit(request.host_url).hostname not in {"localhost", "127.0.0.1", "::1"}
+    ):
+        return jsonify(message="Отправка доступна в локальном клиенте."), 403
+    if ticket_id == 0:
+        return jsonify(message="Укажите положительный ID билета."), 400
+
+    data = request.get_json(silent=True)
+    try:
+        recipient = email_address(data.get("email") if isinstance(data, dict) else None)
+    except ValueError:
+        return jsonify(message="Введите корректный адрес электронной почты."), 400
+
+    if not os.getenv("SMTP_HOST") or not os.getenv("SMTP_FROM"):
+        return jsonify(message="Отправка почты пока не настроена."), 503
+
+    try:
+        pdf_url = f"{TICKET_SERVICE_URL}/tickets/{ticket_id}/pdf"
+        with session.get(pdf_url, timeout=10, allow_redirects=False) as pdf:
+            if pdf.status_code == 404:
+                return jsonify(message="Билет не найден."), 404
+            mime_type = pdf.headers.get("Content-Type", "").partition(";")[0].strip().lower()
+            if pdf.status_code != 200 or mime_type != "application/pdf" or not pdf.content.startswith(b"%PDF-"):
+                return jsonify(message="Не удалось получить PDF билета."), 502
+            content = pdf.content
+    except requests.RequestException:
+        return jsonify(message="Не удалось получить PDF билета."), 502
+
+    try:
+        send_ticket_email(ticket_id, recipient, content)
+    except ValueError:
+        app.logger.error("Invalid ticket email SMTP configuration")
+        return jsonify(message="Проверьте настройки почтового сервера."), 503
+    except (smtplib.SMTPException, OSError):
+        app.logger.warning("SMTP failed to accept a ticket email")
+        return jsonify(message="Почтовый сервер не подтвердил отправку письма."), 502
+
+    return jsonify(message="Почтовый сервер принял письмо с PDF.")
 
 
 def proxy_request(base_url, resource):

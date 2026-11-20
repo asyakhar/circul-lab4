@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ЦИРКуль — билетная касса</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=mfe-1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}?v=mfe-1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}?v=mfe-2">
 </head>
 <body>
 <header class="site-header">
@@ -39,7 +39,7 @@
 </button>
 
 <main>
-    <ticket-mfe api-base="/api/ticket"></ticket-mfe>
+    <ticket-mfe api-base="/api/ticket"{% if ticket_email_enabled %} email-enabled{% endif %}></ticket-mfe>
     <booking-mfe api-base="/api/booking" ticket-api-base="/api/ticket"></booking-mfe>
 </main>
 
@@ -58,7 +58,7 @@
 </div>
 
 <script type="module" src="{{ url_for('static', filename='mfe/shell/shell.js') }}?v=mfe-1"></script>
-<script type="module" src="{{ url_for('static', filename='mfe/ticket/ticket-mfe.js') }}?v=mfe-1"></script>
+<script type="module" src="{{ url_for('static', filename='mfe/ticket/ticket-mfe.js') }}?v=mfe-2"></script>
 <script type="module" src="{{ url_for('static', filename='mfe/booking/booking-mfe.js') }}?v=mfe-1"></script>
 </body>
 </html>

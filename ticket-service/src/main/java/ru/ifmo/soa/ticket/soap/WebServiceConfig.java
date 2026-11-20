@@ -31,9 +31,6 @@ public class WebServiceConfig extends WsConfigurerAdapter {
         PayloadValidatingInterceptor validator = new PayloadValidatingInterceptor();
         validator.setXsdSchema(ticketsSchema());
         validator.setValidateRequest(true);
-        // MTOM uses xop:Include in the physical SOAP envelope. The logical
-        // response still follows XSD, but validating raw XOP as base64Binary
-        // would reject a correct attachment.
         validator.setValidateResponse(false);
         interceptors.add(validator);
     }

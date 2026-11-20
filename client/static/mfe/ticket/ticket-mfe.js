@@ -27,6 +27,20 @@ const template = `
     </div>
 </section>
 
+<dialog class="ticket-email-dialog" data-view="email-dialog" aria-label="Отправка билета на почту">
+    <form data-form="email">
+        <h2 data-view="email-title">Билет на почту</h2>
+        <label>Электронная почта
+            <input data-field="email" type="email" autocomplete="email" maxlength="254" required>
+        </label>
+        <p data-view="email-status" role="status" hidden></p>
+        <div class="ticket-email-actions">
+            <button type="button" data-action="cancel-email">Отмена</button>
+            <button type="submit" class="primary">Отправить PDF</button>
+        </div>
+    </form>
+</dialog>
+
 <div class="grid">
     <section class="panel">
         <h2><span class="section-star">✦</span> Выпустить билет</h2>
@@ -164,7 +178,12 @@ class TicketMfe extends HTMLElement {
                 <td>${escapeHtml(ticket.creationDate)}</td><td>${escapeHtml(ticket.price)}</td>
                 <td>${escapeHtml(ticket.comment)}</td><td><span class="badge">${escapeHtml(ticket.type)}</span></td>
                 <td>${escapeHtml(this.eventText(ticket.event))}</td>
-                <td><a class="ticket-pdf-link" href="${escapeHtml(`${this.apiBase}/tickets/${ticket.id}/pdf`)}">PDF</a></td>
+                <td><div class="ticket-pdf-actions">
+                    <a class="ticket-pdf-link" href="${escapeHtml(`${this.apiBase}/tickets/${ticket.id}/pdf`)}">PDF</a>
+                    ${this.hasAttribute("email-enabled")
+                        ? `<button type="button" data-email-ticket="${escapeHtml(ticket.id)}">На почту</button>`
+                        : ""}
+                </div></td>
             </tr>`).join("");
     }
 
@@ -186,6 +205,7 @@ class TicketMfe extends HTMLElement {
     }
 
     bindEvents() {
+        if (this.hasAttribute("email-enabled")) this.bindEmailForm();
         this.querySelector('[data-action="apply"]').addEventListener("click", () => this.loadTickets());
         this.querySelector('[data-action="previous"]').addEventListener("click", () => {
             this.field("page").value = Math.max(0, Number(this.field("page").value) - 1);
@@ -282,6 +302,54 @@ class TicketMfe extends HTMLElement {
                 this.renderTickets(data);
                 emitMessage(this, "Поиск по типу выполнен.");
             });
+        });
+    }
+
+    bindEmailForm() {
+        const dialog = this.querySelector('[data-view="email-dialog"]');
+        const form = dialog.querySelector("form");
+        const email = this.field("email");
+        const status = dialog.querySelector('[data-view="email-status"]');
+        const submit = form.querySelector('[type="submit"]');
+        const cancel = form.querySelector('[data-action="cancel-email"]');
+
+        this.querySelector('[data-view="tickets"]').addEventListener("click", event => {
+            const button = event.target.closest("[data-email-ticket]");
+            if (!button) return;
+            form.dataset.ticketId = button.dataset.emailTicket;
+            form.reset();
+            status.hidden = true;
+            dialog.querySelector('[data-view="email-title"]').textContent =
+                `Билет №${form.dataset.ticketId} на почту`;
+            dialog.showModal();
+            email.focus();
+        });
+
+        cancel.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("cancel", event => {
+            if (submit.disabled) event.preventDefault();
+        });
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+            if (submit.disabled) return;
+            submit.disabled = cancel.disabled = true;
+            status.hidden = false;
+            status.textContent = "Отправляем письмо…";
+            try {
+                const ticketId = encodeURIComponent(form.dataset.ticketId);
+                const {data} = await callApi(`/api/tickets/${ticketId}/email`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({email: email.value.trim()}),
+                });
+                dialog.close();
+                emitMessage(this, data.message);
+            } catch (error) {
+                status.textContent = error.message;
+            } finally {
+                submit.disabled = cancel.disabled = false;
+            }
         });
     }
 
