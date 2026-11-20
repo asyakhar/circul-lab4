@@ -1,0 +1,74 @@
+{
+  "basicConstraints": 42,
+  "criticalExtensionOIDs": [
+    "lorem",
+    "elit"
+  ],
+  "extendedKeyUsage": [
+    "aliquam",
+    "ipsum"
+  ],
+  "extensions": [
+    {
+      "criticality": false,
+      "oid": "semper"
+    }
+  ],
+  "issuerAlternativeNames": [
+    {
+      "name": "Alma",
+      "type": 14
+    }
+  ],
+  "issuerDN": {
+    "commonName": "nibh",
+    "name": "Adelia"
+  },
+  "issuerUniqueID": [
+    true,
+    false
+  ],
+  "issuerX500Principal": {
+    "name": "Alycia"
+  },
+  "keyUsage": [
+    true,
+    true,
+    false
+  ],
+  "name": "Buster",
+  "nonCriticalExtensionOIDs": [
+    "molestie",
+    "lectus",
+    "libero"
+  ],
+  "notAfter": "2025-08-12",
+  "notBefore": "2025-11-06",
+  "publicKey": {
+    "algorithm": "erat",
+    "modulus": 35,
+    "params": 39,
+    "publicKey": "venenatis"
+  },
+  "serialNumber": 64,
+  "serialNumberObject": {
+    "serialNumber": 93
+  },
+  "sigAlgName": "pulvinar",
+  "sigAlgOID": "felis",
+  "subjectAlternativeNames": [
+    {
+      "name": "Dannie",
+      "type": 74
+    }
+  ],
+  "subjectDN": {
+    "commonName": "mi",
+    "name": "Buster"
+  },
+  "subjectX500Principal": {
+    "name": "Alan"
+  },
+  "type": "risus",
+  "version": 42
+}

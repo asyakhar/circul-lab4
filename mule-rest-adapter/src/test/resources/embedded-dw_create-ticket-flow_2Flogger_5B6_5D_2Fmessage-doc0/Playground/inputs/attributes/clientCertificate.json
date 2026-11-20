@@ -1,0 +1,75 @@
+{
+  "basicConstraints": 38,
+  "criticalExtensionOIDs": [
+    "sodales",
+    "sodales",
+    "faucibus"
+  ],
+  "extendedKeyUsage": [
+    "ac",
+    "ut"
+  ],
+  "extensions": [
+    {
+      "criticality": true,
+      "oid": "faucibus"
+    }
+  ],
+  "issuerAlternativeNames": [
+    {
+      "name": "Alisia",
+      "type": 10
+    }
+  ],
+  "issuerDN": {
+    "commonName": "sit",
+    "name": "Alonzo"
+  },
+  "issuerUniqueID": [
+    true,
+    false,
+    true
+  ],
+  "issuerX500Principal": {
+    "name": "Alex"
+  },
+  "keyUsage": [
+    true,
+    true
+  ],
+  "name": "Chong",
+  "nonCriticalExtensionOIDs": [
+    "erat",
+    "semper",
+    "Pellentesque"
+  ],
+  "notAfter": "2023-02-19",
+  "notBefore": "2026-04-08",
+  "publicKey": {
+    "algorithm": "molestie",
+    "modulus": 93,
+    "params": 34,
+    "publicKey": "risus"
+  },
+  "serialNumber": 83,
+  "serialNumberObject": {
+    "serialNumber": 53
+  },
+  "sigAlgName": "faucibus",
+  "sigAlgOID": "In",
+  "subjectAlternativeNames": [
+    {
+      "name": "Althea",
+      "type": 70
+    }
+  ],
+  "subjectDN": {
+    "commonName": "aliquam",
+    "name": "Ammie"
+  },
+  "subjectX500Principal": {
+    "name": "Abbie"
+  },
+  "type": "adipiscing",
+  "version": 77
+}

@@ -96,9 +96,11 @@
         </http:listener>
 
         <set-payload mimeType="application/xml"
-                     value='#[output application/xml
-                         ns t http://soa.ifmo.ru/ticket/ws
-                         --- t#getTicketWithMaxTypeRequest: {}]'/>
+                     value='#[%dw 2.0
+import mapMaxTypeRequest from dataweave::MaxTypeRequest
+output application/xml
+---
+mapMaxTypeRequest()]'/>
         <wsc:consume config-ref="ticket-soap-config" operation="getTicketWithMaxType"/>
         <set-variable variableName="soapTicket" value='#[%dw 2.0
 output application/java
@@ -157,12 +159,10 @@ payload.body
         </http:listener>
 
         <set-payload value='#[%dw 2.0
+import mapTicketsAboveTypeRequest from dataweave::TicketsAboveTypeRequest
 output application/xml
-ns t http://soa.ifmo.ru/ticket/ws
 ---
-t#getTicketsWithTypeGreaterThanRequest: {
-    t#&apos;type&apos;: attributes.queryParams.&apos;type&apos;
-}]'/>
+mapTicketsAboveTypeRequest(attributes)]'/>
         <wsc:consume config-ref="ticket-soap-config"
                      operation="getTicketsWithTypeGreaterThan"/>
         <set-variable variableName="soapTickets" value='#[%dw 2.0
@@ -221,31 +221,10 @@ payload.body.t#getTicketByIdResponse.t#etag as String]'/>
                                   "ETag": vars.etag
                               }]'/>
                 <set-payload value='#[%dw 2.0
+import mapGetTicketResponse from dataweave::GetTicketResponse
 output application/json skipNullOn="objects"
-ns t http://soa.ifmo.ru/ticket/ws
-var body = payload.body
-var item = body.t#getTicketByIdResponse.t#ticket
 ---
-{
-    id: item.t#id as Number,
-    name: item.t#name as String,
-    coordinates: {
-        x: item.t#coordinates.t#x as Number,
-        y: item.t#coordinates.t#y as Number
-    },
-    creationDate: item.t#creationDate as String,
-    price: item.t#price as Number,
-    comment: item.t#comment as String,
-    "type": item.t#&apos;type&apos; as String,
-    event: if (item.t#event?) {
-        id: item.t#event.t#id as Number,
-        name: item.t#event.t#name as String,
-        ticketsCount: item.t#event.t#ticketsCount as Number,
-        eventType: if (item.t#event.t#eventType?)
-            item.t#event.t#eventType as String
-        else null
-    } else null
-}]'/>
+mapGetTicketResponse(payload)]'/>
             </otherwise>
         </choice>
         <logger level="INFO"
@@ -294,7 +273,7 @@ payload.body.t#downloadTicketResponse.t#fileName as String]'/>
     <flow name="create-ticket-flow">
         <http:listener config-ref="rest-listener-config"
                        path="/api/v1/tickets"
-                       allowedMethods="POST">
+                       allowedMethods="POST" doc:name="Listener">
             <http:response statusCode="201">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:response>
@@ -305,29 +284,10 @@ payload.body.t#downloadTicketResponse.t#fileName as String]'/>
         </http:listener>
 
         <set-payload value='#[%dw 2.0
+import mapCreateTicketRequest from dataweave::CreateTicketRequest
 output application/xml
-ns t http://soa.ifmo.ru/ticket/ws
-var ticket = read(attributes.queryParams.ticket, "application/json")
-fun eventInput(event) = {
-    t#name: event.name,
-    t#ticketsCount: event.ticketsCount,
-    (t#eventType: event.eventType) if (event.eventType?)
-}
 ---
-t#createTicketRequest: {
-    t#ticket: {
-        t#name: ticket.name,
-        t#coordinates: {
-            t#x: ticket.coordinates.x,
-            t#y: ticket.coordinates.y
-        },
-        t#price: ticket.price,
-        t#comment: ticket.comment,
-        t#&apos;type&apos;: ticket.&apos;type&apos;,
-        (t#event: eventInput(ticket.event))
-            if (ticket.event? and ticket.event != null)
-    }
-}]'/>
+mapCreateTicketRequest(attributes)]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="createTicket"/>
         <set-variable variableName="soapTicket" value='#[%dw 2.0
@@ -359,30 +319,10 @@ payload.body.t#createTicketResponse.t#ticket]'/>
         </http:listener>
 
         <set-payload value='#[%dw 2.0
+import mapUpdateTicketRequest from dataweave::UpdateTicketRequest
 output application/xml
-ns t http://soa.ifmo.ru/ticket/ws
-var ticket = read(attributes.queryParams.ticket, "application/json")
-fun eventInput(event) = {
-    t#name: event.name,
-    t#ticketsCount: event.ticketsCount,
-    (t#eventType: event.eventType) if (event.eventType?)
-}
 ---
-t#updateTicketRequest: {
-    t#id: attributes.uriParams.id,
-    t#ticket: {
-        t#name: ticket.name,
-        t#coordinates: {
-            t#x: ticket.coordinates.x,
-            t#y: ticket.coordinates.y
-        },
-        t#price: ticket.price,
-        t#comment: ticket.comment,
-        t#&apos;type&apos;: ticket.&apos;type&apos;,
-        (t#event: eventInput(ticket.event))
-            if (ticket.event? and ticket.event != null)
-    }
-}]'/>
+mapUpdateTicketRequest(attributes)]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="updateTicket"/>
         <set-variable variableName="soapTicket" value='#[%dw 2.0
@@ -409,33 +349,10 @@ payload.body.t#updateTicketResponse.t#ticket]'/>
         </http:listener>
 
         <set-payload value='#[%dw 2.0
+import mapPatchTicketRequest from dataweave::PatchTicketRequest
 output application/xml
-ns t http://soa.ifmo.ru/ticket/ws
-ns xsi http://www.w3.org/2001/XMLSchema-instance
-var ticket = read(attributes.queryParams.ticket, "application/json")
-fun eventInput(event) = {
-    t#name: event.name,
-    t#ticketsCount: event.ticketsCount,
-    (t#eventType: event.eventType) if (event.eventType?)
-}
 ---
-t#patchTicketRequest: {
-    t#id: attributes.uriParams.id,
-    t#ticket: {
-        (t#name: ticket.name) if (ticket.name?),
-        (t#coordinates: {
-            t#x: ticket.coordinates.x,
-            t#y: ticket.coordinates.y
-        }) if (ticket.coordinates?),
-        (t#price: ticket.price) if (ticket.price?),
-        (t#comment: ticket.comment) if (ticket.comment?),
-        (t#&apos;type&apos;: ticket.&apos;type&apos;) if (ticket.&apos;type&apos;?),
-        (t#event: eventInput(ticket.event))
-            if (ticket.event? and ticket.event != null),
-        (t#event @(xsi#nil: "true"): "")
-            if (ticket.event? and ticket.event == null)
-    }
-}]'/>
+mapPatchTicketRequest(attributes)]'/>
 
         <wsc:consume config-ref="ticket-soap-config" operation="patchTicket"/>
         <set-variable variableName="soapTicket" value='#[%dw 2.0
@@ -485,81 +402,27 @@ t#deleteTicketRequest: {
 
     <sub-flow name="ticket-response-to-json-subflow">
         <set-payload value='#[%dw 2.0
+import mapTicketResponse from dataweave::TicketResponse
 output application/json skipNullOn="objects"
-ns t http://soa.ifmo.ru/ticket/ws
-var item = vars.soapTicket
 ---
-{
-    id: item.t#id as Number,
-    name: item.t#name as String,
-    coordinates: {
-        x: item.t#coordinates.t#x as Number,
-        y: item.t#coordinates.t#y as Number
-    },
-    creationDate: item.t#creationDate as String,
-    price: item.t#price as Number,
-    comment: item.t#comment as String,
-    "type": item.t#&apos;type&apos; as String,
-    event: if (item.t#event?) {
-        id: item.t#event.t#id as Number,
-        name: item.t#event.t#name as String,
-        ticketsCount: item.t#event.t#ticketsCount as Number,
-        eventType: if (item.t#event.t#eventType?)
-            item.t#event.t#eventType as String
-        else null
-    } else null
-}]'/>
+mapTicketResponse(vars)]'/>
     </sub-flow>
 
     <sub-flow name="ticket-list-response-to-json-subflow">
         <set-payload value='#[%dw 2.0
+import mapTicketListResponse from dataweave::TicketListResponse
 output application/json skipNullOn="objects"
-ns t http://soa.ifmo.ru/ticket/ws
-fun toTicket(item) = {
-    id: item.t#id as Number,
-    name: item.t#name as String,
-    coordinates: {
-        x: item.t#coordinates.t#x as Number,
-        y: item.t#coordinates.t#y as Number
-    },
-    creationDate: item.t#creationDate as String,
-    price: item.t#price as Number,
-    comment: item.t#comment as String,
-    "type": item.t#&apos;type&apos; as String,
-    event: if (item.t#event?) {
-        id: item.t#event.t#id as Number,
-        name: item.t#event.t#name as String,
-        ticketsCount: item.t#event.t#ticketsCount as Number,
-        eventType: if (item.t#event.t#eventType?)
-            item.t#event.t#eventType as String
-        else null
-    } else null
-}
 ---
-(vars.soapTickets default []) map toTicket($)]'/>
+mapTicketListResponse(vars)]'/>
     </sub-flow>
 
     <error-handler name="ticket-rest-error-handler">
         <on-error-propagate type="WSC:SOAP_FAULT" logException="true">
             <set-variable variableName="soapFault" value='#[%dw 2.0
-                output application/java
-                ns soap11 http://schemas.xmlsoap.org/soap/envelope/
-                ns soap12 http://www.w3.org/2003/05/soap-envelope
-                ns t http://soa.ifmo.ru/ticket/ws
-                var rawDetail = error.errorMessage.payload.detail default "&lt;detail/>"
-                var document = read(rawDetail, "application/xml")
-                var detail = document.detail
-                    default document.soap11#detail
-                    default document.soap12#Detail
-                    default document
-                ---
-                {
-                    status: (detail.t#status default 500) as Number,
-                    code: (detail.t#code default "INTERNAL_ERROR") as String,
-                    message: (detail.t#message default error.description
-                    default "Внутренняя ошибка SOAP-сервиса.") as String,
-                    field: if (detail.t#field?) detail.t#field as String else null
-            }]'/>
+import mapSoapFaultDetails from dataweave::SoapFaultDetails
+output application/java
+---
+mapSoapFaultDetails(error)]'/>
 
             <set-variable variableName="httpStatus" value="#[vars.soapFault.status]"/>
             <logger level="ERROR"
@@ -606,12 +469,10 @@ fun toTicket(item) = {
         <set-variable variableName="outboundHeaders"
                       value='#[{"Content-Type": "application/json; charset=UTF-8"}]'/>
         <set-payload mimeType="application/json"
-                     value='#[output application/json --- {
-                         timestamp: (now() &gt;&gt; "UTC") as String {format: "dd.MM.yyyy HH:mm:ss"},
-                         status: 404,
-                         error: "Not Found",
-                         message: "Запрошенный REST-ресурс не найден.",
-                         path: attributes.requestPath
-                     }]'/>
+                     value='#[%dw 2.0
+import mapRouteNotFound from dataweave::RouteNotFound
+output application/json
+---
+mapRouteNotFound(attributes)]'/>
     </flow>
 </mule>

@@ -1,0 +1,74 @@
+{
+  "basicConstraints": 19,
+  "criticalExtensionOIDs": [
+    "ut",
+    "ipsum",
+    "eros"
+  ],
+  "extendedKeyUsage": [
+    "tincidunt",
+    "ut"
+  ],
+  "extensions": [
+    {
+      "criticality": false,
+      "oid": "at"
+    }
+  ],
+  "issuerAlternativeNames": [
+    {
+      "name": "Cornelius",
+      "type": 43
+    }
+  ],
+  "issuerDN": {
+    "commonName": "dui",
+    "name": "Alita"
+  },
+  "issuerUniqueID": [
+    true,
+    true
+  ],
+  "issuerX500Principal": {
+    "name": "Agnes"
+  },
+  "keyUsage": [
+    true,
+    true
+  ],
+  "name": "Aide",
+  "nonCriticalExtensionOIDs": [
+    "amet",
+    "Lorem",
+    "consectetur"
+  ],
+  "notAfter": "2022-12-04",
+  "notBefore": "2024-06-15",
+  "publicKey": {
+    "algorithm": "semper",
+    "modulus": 76,
+    "params": 7,
+    "publicKey": "tempor"
+  },
+  "serialNumber": 66,
+  "serialNumberObject": {
+    "serialNumber": 64
+  },
+  "sigAlgName": "elit",
+  "sigAlgOID": "Pellentesque",
+  "subjectAlternativeNames": [
+    {
+      "name": "Carroll",
+      "type": 90
+    }
+  ],
+  "subjectDN": {
+    "commonName": "molestie",
+    "name": "Charlie"
+  },
+  "subjectX500Principal": {
+    "name": "Cliff"
+  },
+  "type": "dolor",
+  "version": 8
+}

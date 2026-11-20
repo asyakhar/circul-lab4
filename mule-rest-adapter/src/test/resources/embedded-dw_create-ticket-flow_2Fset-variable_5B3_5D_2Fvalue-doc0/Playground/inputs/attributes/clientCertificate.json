@@ -1,0 +1,75 @@
+{
+  "basicConstraints": 94,
+  "criticalExtensionOIDs": [
+    "adipiscing",
+    "aliquam"
+  ],
+  "extendedKeyUsage": [
+    "faucibus",
+    "mi",
+    "felis"
+  ],
+  "extensions": [
+    {
+      "criticality": true,
+      "oid": "erat"
+    }
+  ],
+  "issuerAlternativeNames": [
+    {
+      "name": "Alisia",
+      "type": 59
+    }
+  ],
+  "issuerDN": {
+    "commonName": "molestie",
+    "name": "Ahmed"
+  },
+  "issuerUniqueID": [
+    false,
+    false
+  ],
+  "issuerX500Principal": {
+    "name": "Ali"
+  },
+  "keyUsage": [
+    false,
+    true,
+    true
+  ],
+  "name": "Andera",
+  "nonCriticalExtensionOIDs": [
+    "erat",
+    "at",
+    "ipsum"
+  ],
+  "notAfter": "2026-01-08",
+  "notBefore": "2025-02-22",
+  "publicKey": {
+    "algorithm": "dolor",
+    "modulus": 16,
+    "params": 38,
+    "publicKey": "erat"
+  },
+  "serialNumber": 36,
+  "serialNumberObject": {
+    "serialNumber": 10
+  },
+  "sigAlgName": "mi",
+  "sigAlgOID": "erat",
+  "subjectAlternativeNames": [
+    {
+      "name": "Colton",
+      "type": 50
+    }
+  ],
+  "subjectDN": {
+    "commonName": "eget",
+    "name": "Allyn"
+  },
+  "subjectX500Principal": {
+    "name": "Adria"
+  },
+  "type": "tempor",
+  "version": 17
+}
