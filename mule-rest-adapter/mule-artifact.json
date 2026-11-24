@@ -1,6 +1,6 @@
 {
   "name": "ticket-rest-adapter",
-  "minMuleVersion": "4.13.0",
+  "minMuleVersion": "4.10.0",
   "requiredProduct": "MULE",
   "configs": [
     "ticket-rest-adapter.xml"

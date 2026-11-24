@@ -14,8 +14,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mule.http.connector.version>1.10.6</mule.http.connector.version>
         <mule.wsc.connector.version>2.1.4</mule.wsc.connector.version>
-        <mule.maven.plugin.version>4.10.3</mule.maven.plugin.version>
-    <app.runtime>4.13.0</app.runtime></properties>
+        <mule.maven.plugin.version>4.6.1</mule.maven.plugin.version>
+        <app.runtime>4.10.0</app.runtime>
+    </properties>
     
     <build>
         <plugins>

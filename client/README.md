@@ -37,7 +37,17 @@
 `SMTP_HOST` и `SMTP_FROM`. Получатель вводит адрес в форме. Flask скачивает
 PDF по существующему маршруту Mule и передаёт письмо с вложением SMTP-серверу.
 
-Для проверки на Mac можно запустить локальный почтовый ящик [Mailpit](https://mailpit.axllent.org/docs/install/):
+Для демонстрации на Ubuntu можно запустить локальный почтовый ящик
+[Mailpit](https://mailpit.axllent.org/docs/install/) через Docker:
+
+```bash
+sudo docker run --rm --name circul-mailpit \
+  -p 127.0.0.1:1025:1025 \
+  -p 127.0.0.1:8025:8025 \
+  axllent/mailpit
+```
+
+На macOS Mailpit можно установить и запустить без Docker:
 
 ```bash
 brew install mailpit
@@ -61,6 +71,14 @@ SMTP_HOST=127.0.0.1 SMTP_SECURITY=plain SMTP_FROM=tickets@example.test \
 587. Для TLS сразу при подключении используйте `SMTP_SECURITY=ssl` (порт 465).
 При необходимости переопределите порт через `SMTP_PORT`. Секреты передавайте
 через окружение процесса.
+
+Проверить почтовую логику без подключения к внешнему SMTP-серверу:
+
+```bash
+client/.venv/bin/python -m unittest discover -s client/tests -v
+```
+
+Окружение `client/.venv` автоматически создаётся при первом запуске клиента.
 
 Для запуска клиента по HTTPS задайте одновременно `CLIENT_CERT_FILE` и
 `CLIENT_KEY_FILE` — пути к PEM-сертификату и его закрытому ключу. Имена
